@@ -1,0 +1,12 @@
+{
+  "name": "sultan-travel",
+  "version": "1.0.0",
+  "description": "Sultan Travel - Flight and Hotel Booking Platform",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step required for static HTML'"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.12"
+  }
+}
