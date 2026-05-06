@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>سلطان ترافيل - أفضل أسعار تذاكر الطيران والفنادق</title>
+<title>سلطان ترافيل1 - أفضل أسعار تذاكر الطيران والفنادق</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 
@@ -833,10 +833,6 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
             <button class="tt-btn" onclick="setTrip(this,'ذهاب وعودة')">ذهاب وعودة</button>
             <button class="tt-btn" onclick="setTrip(this,'متعدد الوجهات')">متعدد الوجهات</button>
           </div>
-          <div class="fg" style="margin-bottom:10px;">
-            <label>🎯 نوع الرحلة</label>
-            <select id="flightType"><option>سياحة</option><option>حج أو عمرة</option><option>تأشيرة عبور</option></select>
-          </div>
           <div class="frow c2" id="fromToRow">
             <div class="fg"><label>✈ مطار المغادرة</label>
               <div class="airport-wrap" id="fromWrap">
@@ -1507,8 +1503,6 @@ function buildSummary() {
   }
   
   document.getElementById('sumContent').innerHTML = `
-    <div class="sum-row"><span class="s-lbl">نوع الرحلة</span><span class="s-val gold">${tripType}</span></div>
-    <div class="sum-row"><span class="s-lbl">نوع الخدمة</span><span class="s-val gold">${document.getElementById('flightType').value}</span></div>
     ${tripType !== 'متعدد الوجهات' ? `
     <div class="sum-row"><span class="s-lbl">من ← إلى</span><span class="s-val">${document.getElementById('from').value} ← ${document.getElementById('to').value}</span></div>
     <div class="sum-row"><span class="s-lbl">تاريخ المغادرة</span><span class="s-val">${document.getElementById('depDate').value}</span></div>
