@@ -1,9 +1,11 @@
+html
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>سلطان ترافيل1 - أفضل أسعار تذاكر الطيران والفنادق</title>
+<title>سلطان ترافيل - أفضل أسعار تذاكر الطيران والفنادق والتأشيرات</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 
@@ -13,7 +15,6 @@
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-  // ============ FIREBASE CONFIG ============
   const firebaseConfig = {
     apiKey: "AIzaSyAU_pffmFEu5sI8s1WWAjkdR7oxFEbVTAo",
     authDomain: "sultan-travel-56116.firebaseapp.com",
@@ -23,68 +24,46 @@
     appId: "1:83851696987:web:137608051b973d991a587e",
     measurementId: "G-9M2PC092WD"
   };
-  // =========================================
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db   = getFirestore(app);
-
-  // ADMIN EMAIL — غير الإيميل ده لإيميلك
   const ADMIN_EMAIL = "hema@travel.com";
 
-  // ===== AUTH STATE =====
   onAuthStateChanged(auth, async (user) => {
     window._currentUser = user;
     updateNavUI(user);
     if (user) {
-      // Owner email always gets admin regardless of Firestore
       if (user.email === ADMIN_EMAIL) {
-        window._isAdmin     = true;
-        window._isAssistant = false;
-        window._userRole    = 'admin';
+        window._isAdmin = true; window._isAssistant = false; window._userRole = 'admin';
         document.getElementById('adminToggleBtn').style.display = 'flex';
         const sub = document.getElementById('admPanelSub');
         if (sub) sub.textContent = '👑 أدمن — ' + (user.displayName || user.email);
       } else {
-        // Read role from Firestore
         try {
           const userSnap = await getDoc(doc(db, 'users', user.uid));
           const role = userSnap.exists() ? (userSnap.data().role || 'user') : 'user';
-          window._userRole    = role;
-          window._isAdmin     = role === 'admin';
-          window._isAssistant = role === 'assistant' || role === 'admin';
+          window._userRole = role; window._isAdmin = role === 'admin'; window._isAssistant = role === 'assistant' || role === 'admin';
           const showPanel = role === 'admin' || role === 'assistant';
           document.getElementById('adminToggleBtn').style.display = showPanel ? 'flex' : 'none';
-          if (showPanel) {
-            const sub = document.getElementById('admPanelSub');
-            const roleLabel = role === 'admin' ? '👑 أدمن' : '🛠 مساعد';
-            if (sub) sub.textContent = roleLabel + ' — ' + (user.displayName || user.email);
-          }
-        } catch(e) {
-          window._isAdmin     = false;
-          window._isAssistant = false;
-          window._userRole    = 'user';
-          document.getElementById('adminToggleBtn').style.display = 'none';
-        }
+          if (showPanel) { const sub = document.getElementById('admPanelSub'); const roleLabel = role === 'admin' ? '👑 أدمن' : '🛠 مساعد'; if (sub) sub.textContent = roleLabel + ' — ' + (user.displayName || user.email); }
+        } catch(e) { window._isAdmin = false; window._isAssistant = false; window._userRole = 'user'; document.getElementById('adminToggleBtn').style.display = 'none'; }
       }
     } else {
-      window._isAdmin     = false;
-      window._isAssistant = false;
-      window._userRole    = null;
+      window._isAdmin = false; window._isAssistant = false; window._userRole = null;
       document.getElementById('adminToggleBtn').style.display = 'none';
     }
     loadReviews();
   });
 
-  // ===== REGISTER =====
   window.doRegister = async () => {
-    const name  = document.getElementById('reg-name').value.trim();
+    const name = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
-    const pass  = document.getElementById('reg-pass').value;
+    const pass = document.getElementById('reg-pass').value;
     const pass2 = document.getElementById('reg-pass2').value;
     if (!name||!email||!pass) return showAuthMsg('reg','يرجى ملء جميع الحقول','err');
-    if (pass !== pass2)       return showAuthMsg('reg','كلمتا السر غير متطابقتين','err');
-    if (pass.length < 6)      return showAuthMsg('reg','كلمة السر 6 أحرف على الأقل','err');
+    if (pass !== pass2) return showAuthMsg('reg','كلمتا السر غير متطابقتين','err');
+    if (pass.length < 6) return showAuthMsg('reg','كلمة السر 6 أحرف على الأقل','err');
     setBtnLoading('btn-register', true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -92,51 +71,34 @@
       await setDoc(doc(db,'users', cred.user.uid), { name, email, role:'user', createdAt: serverTimestamp() });
       showAuthMsg('reg','✅ تم إنشاء الحساب بنجاح!','ok');
       setTimeout(() => closeAuthModal(), 1200);
-    } catch(e) {
-      showAuthMsg('reg', firebaseErrAr(e.code), 'err');
-    }
+    } catch(e) { showAuthMsg('reg', firebaseErrAr(e.code), 'err'); }
     setBtnLoading('btn-register', false);
   };
 
-  // ===== LOGIN =====
   window.doLogin = async () => {
     const email = document.getElementById('login-email').value.trim();
-    const pass  = document.getElementById('login-pass').value;
+    const pass = document.getElementById('login-pass').value;
     if (!email||!pass) return showAuthMsg('login','يرجى إدخال الإيميل وكلمة السر','err');
     setBtnLoading('btn-login', true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       showAuthMsg('login','✅ تم تسجيل الدخول','ok');
       setTimeout(() => closeAuthModal(), 900);
-    } catch(e) {
-      showAuthMsg('login', firebaseErrAr(e.code), 'err');
-    }
+    } catch(e) { showAuthMsg('login', firebaseErrAr(e.code), 'err'); }
     setBtnLoading('btn-login', false);
   };
 
-  // ===== LOGOUT =====
-  window.doLogout = async () => {
-    await signOut(auth);
-    showToast('👋 تم تسجيل الخروج');
-  };
+  window.doLogout = async () => { await signOut(auth); showToast('👋 تم تسجيل الخروج'); };
 
-  // ===== SUBMIT REVIEW =====
   window.submitReview = async () => {
     if (!window._currentUser) { openAuthModal('login'); return; }
     const rating = parseInt(document.getElementById('rev-rating-val').dataset.val || 0);
-    const text   = document.getElementById('rev-text-input').value.trim();
-    if (!rating)      return showToast('⚠️ اختر عدد النجوم');
+    const text = document.getElementById('rev-text-input').value.trim();
+    if (!rating) return showToast('⚠️ اختر عدد النجوم');
     if (text.length < 10) return showToast('⚠️ اكتب تعليقاً أكثر من 10 حروف');
     setBtnLoading('btn-submit-review', true);
     try {
-      await addDoc(collection(db,'reviews'), {
-        uid:    window._currentUser.uid,
-        name:   window._currentUser.displayName || 'مسافر',
-        email:  window._currentUser.email,
-        rating, text,
-        approved: false,
-        createdAt: serverTimestamp()
-      });
+      await addDoc(collection(db,'reviews'), { uid: window._currentUser.uid, name: window._currentUser.displayName || 'مسافر', email: window._currentUser.email, rating, text, approved: false, createdAt: serverTimestamp() });
       document.getElementById('rev-text-input').value = '';
       setStarRating(0);
       showToast('✅ تم إرسال تعليقك وسيظهر بعد المراجعة');
@@ -144,62 +106,35 @@
     setBtnLoading('btn-submit-review', false);
   };
 
-  // ===== LOAD REVIEWS =====
   window.loadReviews = async () => {
     try {
       const q = query(collection(db,'reviews'), orderBy('createdAt','desc'));
       const snap = await getDocs(q);
-      const approved = [];
-      const pending  = [];
-      snap.forEach(d => {
-        const rev = { id: d.id, ...d.data() };
-        if (rev.approved) approved.push(rev);
-        else pending.push(rev);
-      });
+      const approved = []; const pending = [];
+      snap.forEach(d => { const rev = { id: d.id, ...d.data() }; if (rev.approved) approved.push(rev); else pending.push(rev); });
       renderReviews(approved);
       if (window._isAdmin || window._isAssistant) renderAdminReviews(pending, approved);
     } catch(e) { console.log('reviews err',e); }
   };
 
-  // ===== ADMIN: APPROVE =====
-  window.approveReview = async (id) => {
-    await updateDoc(doc(db,'reviews',id), { approved: true });
-    showToast('✅ تم نشر التعليق');
-    loadReviews();
-  };
-  window.deleteReview = async (id) => {
-    await deleteDoc(doc(db,'reviews',id));
-    showToast('🗑️ تم حذف التعليق');
-    loadReviews();
-  };
+  window.approveReview = async (id) => { await updateDoc(doc(db,'reviews',id), { approved: true }); showToast('✅ تم نشر التعليق'); loadReviews(); };
+  window.deleteReview = async (id) => { await deleteDoc(doc(db,'reviews',id)); showToast('🗑️ تم حذف التعليق'); loadReviews(); };
 
-  // ===== ADMIN: ADD FAKE REVIEW =====
   window.addFakeReview = async () => {
-    const name   = document.getElementById('fake-name').value.trim();
-    const loc    = document.getElementById('fake-loc').value.trim();
-    const text   = document.getElementById('fake-text').value.trim();
+    const name = document.getElementById('fake-name').value.trim();
+    const loc = document.getElementById('fake-loc').value.trim();
+    const text = document.getElementById('fake-text').value.trim();
     const rating = parseInt(document.getElementById('fake-rating').value);
     if (!name || !text || !rating) return showToast('⚠️ يرجى ملء الاسم والتعليق والتقييم');
     setBtnLoading('btn-fake-review', true);
     try {
-      await addDoc(collection(db,'reviews'), {
-        uid: 'admin-fake-' + Date.now(),
-        name, email: '', location: loc,
-        rating, text,
-        approved: true,
-        fake: true,
-        createdAt: serverTimestamp()
-      });
-      document.getElementById('fake-name').value  = '';
-      document.getElementById('fake-loc').value   = '';
-      document.getElementById('fake-text').value  = '';
-      showToast('✅ تم إضافة التعليق ونشره على الفور');
-      loadReviews();
+      await addDoc(collection(db,'reviews'), { uid: 'admin-fake-' + Date.now(), name, email: '', location: loc, rating, text, approved: true, fake: true, createdAt: serverTimestamp() });
+      document.getElementById('fake-name').value = ''; document.getElementById('fake-loc').value = ''; document.getElementById('fake-text').value = '';
+      showToast('✅ تم إضافة التعليق ونشره'); loadReviews();
     } catch(e) { showToast('❌ خطأ: ' + e.message); }
     setBtnLoading('btn-fake-review', false);
   };
 
-  // ===== ADMIN: LOAD USERS =====
   window.loadUsers = async () => {
     const container = document.getElementById('usersListContainer');
     container.innerHTML = '<p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">جاري التحميل...</p>';
@@ -211,122 +146,74 @@
       container.innerHTML = users.map(u => {
         const roleClass = u.role === 'admin' ? 'role-admin' : u.role === 'assistant' ? 'role-assistant' : 'role-user';
         const roleLabel = u.role === 'admin' ? '👑 أدمن' : u.role === 'assistant' ? '🛠 مساعد' : '👤 مستخدم';
-        return `<div class="user-card" id="ucard-${u.id}">
-          <div class="user-card-top">
-            <div class="user-av">${(u.name||'؟')[0]}</div>
-            <div class="user-info">
-              <div class="user-name">${u.name || 'بدون اسم'}</div>
-              <div class="user-email">${u.email || ''}</div>
-            </div>
-            <span class="role-badge ${roleClass}">${roleLabel}</span>
-          </div>
-          <div class="user-actions">
-            <select class="role-select" id="role-sel-${u.id}">
-              <option value="user"      ${u.role==='user'?'selected':''}>👤 مستخدم</option>
-              <option value="assistant" ${u.role==='assistant'?'selected':''}>🛠 مساعد</option>
-              <option value="admin"     ${u.role==='admin'?'selected':''}>👑 أدمن</option>
-            </select>
-            <button class="ua-btn ua-save" onclick="setUserRole('${u.id}',document.getElementById('role-sel-${u.id}').value)">💾</button>
-            <button class="ua-btn ua-reset" onclick="resetUserPass('${u.email}')">🔑</button>
-            <button class="ua-btn ua-del" onclick="removeUser('${u.id}')">🗑</button>
-          </div>
-        </div>`;
+        return `<div class="user-card" id="ucard-${u.id}"><div class="user-card-top"><div class="user-av">${(u.name||'؟')[0]}</div><div class="user-info"><div class="user-name">${u.name||'بدون اسم'}</div><div class="user-email">${u.email||''}</div></div><span class="role-badge ${roleClass}">${roleLabel}</span></div><div class="user-actions"><select class="role-select" id="role-sel-${u.id}"><option value="user" ${u.role==='user'?'selected':''}>👤 مستخدم</option><option value="assistant" ${u.role==='assistant'?'selected':''}>🛠 مساعد</option><option value="admin" ${u.role==='admin'?'selected':''}>👑 أدمن</option></select><button class="ua-btn ua-save" onclick="setUserRole('${u.id}',document.getElementById('role-sel-${u.id}').value)">💾</button><button class="ua-btn ua-reset" onclick="resetUserPass('${u.email}')">🔑</button><button class="ua-btn ua-del" onclick="removeUser('${u.id}')">🗑</button></div></div>`;
       }).join('');
     } catch(e) { container.innerHTML = '<p style="color:#ff8080;font-size:12px;text-align:center;padding:10px;">خطأ في التحميل</p>'; }
   };
 
-  // ===== ADMIN: SET USER ROLE =====
   window.setUserRole = async (uid, role) => {
     try {
       await updateDoc(doc(db,'users',uid), { role });
-      showToast('✅ تم تغيير الصلاحية بنجاح');
+      showToast('✅ تم تغيير الصلاحية');
       const card = document.getElementById('ucard-'+uid);
-      if (card) {
-        const badge = card.querySelector('.role-badge');
-        badge.className = 'role-badge ' + (role==='admin'?'role-admin':role==='assistant'?'role-assistant':'role-user');
-        badge.textContent = role==='admin'?'👑 أدمن':role==='assistant'?'🛠 مساعد':'👤 مستخدم';
-      }
+      if (card) { const badge = card.querySelector('.role-badge'); badge.className = 'role-badge ' + (role==='admin'?'role-admin':role==='assistant'?'role-assistant':'role-user'); badge.textContent = role==='admin'?'👑 أدمن':role==='assistant'?'🛠 مساعد':'👤 مستخدم'; }
     } catch(e) { showToast('❌ فشل تغيير الصلاحية'); }
   };
 
-  // ===== ADMIN: RESET USER PASSWORD =====
   window.resetUserPass = async (email) => {
-    if (!email) return showToast('⚠️ لا يوجد إيميل لهذا المستخدم');
-    try {
-      await sendPasswordResetEmail(auth, email);
-      showToast('📧 تم إرسال رسالة إعادة الضبط للإيميل');
-    } catch(e) { showToast('❌ فشل الإرسال'); }
+    if (!email) return showToast('⚠️ لا يوجد إيميل');
+    try { await sendPasswordResetEmail(auth, email); showToast('📧 تم إرسال رسالة إعادة الضبط'); } catch(e) { showToast('❌ فشل الإرسال'); }
   };
 
-  // ===== ADMIN: REMOVE USER =====
   window.removeUser = async (uid) => {
-    if (!confirm('هل تريد حذف هذا المستخدم نهائياً؟')) return;
-    try {
-      await deleteDoc(doc(db,'users',uid));
-      document.getElementById('ucard-'+uid)?.remove();
-      showToast('🗑️ تم حذف المستخدم');
-    } catch(e) { showToast('❌ فشل الحذف'); }
+    if (!confirm('هل تريد حذف هذا المستخدم؟')) return;
+    try { await deleteDoc(doc(db,'users',uid)); document.getElementById('ucard-'+uid)?.remove(); showToast('🗑️ تم حذف المستخدم'); } catch(e) { showToast('❌ فشل الحذف'); }
   };
 
-  // ===== ADMIN: FIX USER BY UID (create/overwrite Firestore doc) =====
   window.fixUserById = async () => {
-    const uid   = document.getElementById('fix-uid').value.trim();
-    const name  = document.getElementById('fix-name').value.trim();
+    const uid = document.getElementById('fix-uid').value.trim();
+    const name = document.getElementById('fix-name').value.trim();
     const email = document.getElementById('fix-email').value.trim();
-    const role  = document.getElementById('fix-role').value;
+    const role = document.getElementById('fix-role').value;
     if (!uid) return showToast('⚠️ يرجى إدخال الـ UID');
     setBtnLoading('btn-fix-user', true);
     try {
-      await setDoc(doc(db, 'users', uid), {
-        name:  name  || email || uid,
-        email: email || '',
-        role,
-        createdAt: serverTimestamp()
-      }, { merge: true });
-      showToast('✅ تم تطبيق الصلاحية — يسجل خروج ودخول تاني');
-      document.getElementById('fix-uid').value   = '';
-      document.getElementById('fix-name').value  = '';
-      document.getElementById('fix-email').value = '';
+      await setDoc(doc(db, 'users', uid), { name: name||email||uid, email: email||'', role, createdAt: serverTimestamp() }, { merge: true });
+      showToast('✅ تم تطبيق الصلاحية');
+      document.getElementById('fix-uid').value = ''; document.getElementById('fix-name').value = ''; document.getElementById('fix-email').value = '';
       window.loadUsers();
     } catch(e) { showToast('❌ فشل: ' + e.message); }
     setBtnLoading('btn-fix-user', false);
   };
 
-  // ===== ADMIN: CREATE SUB-USER (stays logged in as admin) =====
   window.createSubUser = async () => {
-    const name  = document.getElementById('new-user-name').value.trim();
+    const name = document.getElementById('new-user-name').value.trim();
     const email = document.getElementById('new-user-email').value.trim();
-    const pass  = document.getElementById('new-user-pass').value;
-    const role  = document.getElementById('new-user-role').value;
+    const pass = document.getElementById('new-user-pass').value;
+    const role = document.getElementById('new-user-role').value;
     if (!name||!email||!pass) return showToast('⚠️ يرجى ملء جميع الحقول');
-    if (pass.length < 6)      return showToast('⚠️ كلمة السر 6 أحرف على الأقل');
+    if (pass.length < 6) return showToast('⚠️ كلمة السر 6 أحرف على الأقل');
     setBtnLoading('btn-create-user', true);
     try {
-      // secondary app trick: admin stays logged in
-      const secApp  = initializeApp(firebaseConfig, 'sec-' + Date.now());
+      const secApp = initializeApp(firebaseConfig, 'sec-' + Date.now());
       const secAuth = getAuth(secApp);
       const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
       await updateProfile(cred.user, { displayName: name });
       await setDoc(doc(db,'users', cred.user.uid), { name, email, role, createdAt: serverTimestamp() });
-      await signOut(secAuth);
-      await deleteApp(secApp);
-      document.getElementById('new-user-name').value  = '';
-      document.getElementById('new-user-email').value = '';
-      document.getElementById('new-user-pass').value  = '';
-      showToast('✅ تم إنشاء الحساب: ' + name);
-      window.loadUsers();
+      await signOut(secAuth); await deleteApp(secApp);
+      document.getElementById('new-user-name').value = ''; document.getElementById('new-user-email').value = ''; document.getElementById('new-user-pass').value = '';
+      showToast('✅ تم إنشاء الحساب: ' + name); window.loadUsers();
     } catch(e) { showToast('❌ ' + firebaseErrAr(e.code)); }
     setBtnLoading('btn-create-user', false);
   };
 
-  // ===== ADMIN: SITE SETTINGS =====
   window.saveSiteSettings = async () => {
     const settings = {
       brandAr: document.getElementById('ctrl-brand-ar').value,
       brandEn: document.getElementById('ctrl-brand-en').value,
       heroLine1: document.getElementById('ctrl-hero-line1').value,
       heroLine2: document.getElementById('ctrl-hero-line2').value,
-      heroSub:  document.getElementById('ctrl-hero-sub').value,
+      heroSub: document.getElementById('ctrl-hero-sub').value,
       stat1: document.getElementById('ctrl-stat1').value,
       stat1lbl: document.getElementById('ctrl-stat1-lbl').value,
       stat2: document.getElementById('ctrl-stat2').value,
@@ -345,413 +232,371 @@
     try {
       const snap = await getDoc(doc(db,'settings','site'));
       if (snap.exists()) {
-        const s = snap.data();
-        applySettings(s);
-        // fill admin inputs
-        Object.keys(s).forEach(k => {
-          const el = document.getElementById('ctrl-'+k.replace(/([A-Z])/g,'-$1').toLowerCase());
-          if (el) el.value = s[k];
-        });
+        const s = snap.data(); applySettings(s);
+        Object.keys(s).forEach(k => { const el = document.getElementById('ctrl-'+k.replace(/([A-Z])/g,'-$1').toLowerCase()); if (el) el.value = s[k]; });
       }
     } catch(e) {}
   };
 
-  // init
-  window.addEventListener('DOMContentLoaded', () => {
-    loadSiteSettings();
-  });
-
-  // expose db/auth for helpers
-  window._db   = db;
-  window._auth = auth;
+  window.addEventListener('DOMContentLoaded', () => { loadSiteSettings(); });
+  window._db = db; window._auth = auth;
 </script>
 
 <style>
 :root {
-  --navy:  #060f1e;
-  --navy2: #0d1f38;
-  --navy3: #152d50;
-  --gold:  #c9a84c;
-  --gold2: #e8c97a;
-  --gold3: #f5e0a3;
-  --white: #ffffff;
-  --offwhite: #f0ede4;
-  --gray:  #7a8fa6;
-  --light: #d4dce8;
-  --green: #25D366;
+  --navy: #060f1e; --navy2: #0d1f38; --navy3: #152d50;
+  --gold: #c9a84c; --gold2: #e8c97a; --gold3: #f5e0a3;
+  --white: #ffffff; --gray: #7a8fa6; --light: #d4dce8; --green: #25D366;
 }
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior:smooth; font-size:16px; }
-body { font-family:'Cairo',sans-serif; background:var(--navy); color:var(--white); overflow-x:hidden; direction:rtl; }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Cairo',sans-serif;background:var(--navy);color:var(--white);overflow-x:hidden;direction:rtl;}
 
-/* =========== NAVBAR =========== */
-nav {
-  position:fixed; top:0; width:100%; z-index:1000;
-  background:rgba(6,15,30,0.96); backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(201,168,76,0.18);
-  padding:0 1.5rem; display:flex; align-items:center; justify-content:space-between; height:64px;
-}
-.nav-logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
-.nav-logo-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--gold),var(--gold2)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-.nav-logo-text { display:flex; flex-direction:column; line-height:1; }
-.nav-logo-text .ar { font-size:17px; font-weight:900; color:var(--gold); }
-.nav-logo-text .en { font-size:10px; color:var(--gray); letter-spacing:2px; text-transform:uppercase; }
-.nav-links { display:flex; gap:1.5rem; align-items:center; }
-.nav-links a { color:var(--light); text-decoration:none; font-size:14px; font-weight:600; transition:color .3s; position:relative; }
-.nav-links a::after { content:''; position:absolute; bottom:-4px; right:0; width:0; height:2px; background:var(--gold); transition:width .3s; }
-.nav-links a:hover { color:var(--gold); }
-.nav-links a:hover::after { width:100%; }
-.nav-cta { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:var(--navy) !important; padding:8px 18px; border-radius:8px; font-weight:900 !important; }
-.nav-cta::after { display:none !important; }
+/* NAVBAR */
+nav{position:fixed;top:0;width:100%;z-index:1000;background:rgba(6,15,30,0.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,168,76,0.18);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:64px;}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.nav-logo-text{display:flex;flex-direction:column;line-height:1;}
+.nav-logo-text .ar{font-size:17px;font-weight:900;color:var(--gold);}
+.nav-logo-text .en{font-size:10px;color:var(--gray);letter-spacing:2px;text-transform:uppercase;}
+.nav-links{display:flex;gap:1.5rem;align-items:center;}
+.nav-links a{color:var(--light);text-decoration:none;font-size:14px;font-weight:600;transition:color .3s;position:relative;}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:2px;background:var(--gold);transition:width .3s;}
+.nav-links a:hover{color:var(--gold);}
+.nav-links a:hover::after{width:100%;}
+.nav-cta{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy)!important;padding:8px 18px;border-radius:8px;font-weight:900!important;}
+.nav-cta::after{display:none!important;}
+.nav-auth{display:flex;align-items:center;gap:10px;}
+.nav-user-btn{display:flex;align-items:center;gap:7px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:5px 12px;cursor:pointer;color:var(--gold2);font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;transition:all .2s;}
+.nav-user-btn:hover{background:rgba(201,168,76,.2);}
+.nav-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--navy3));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--navy);flex-shrink:0;}
+.nav-login-btn{background:transparent;border:1px solid rgba(201,168,76,.35);border-radius:8px;padding:7px 16px;color:var(--gold);font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.nav-login-btn:hover{background:rgba(201,168,76,.1);}
 
-/* Nav Auth */
-.nav-auth { display:flex; align-items:center; gap:10px; }
-.nav-user-btn {
-  display:flex; align-items:center; gap:7px;
-  background:rgba(201,168,76,.1); border:1px solid rgba(201,168,76,.25);
-  border-radius:20px; padding:5px 12px; cursor:pointer;
-  color:var(--gold2); font-size:13px; font-weight:700;
-  font-family:'Cairo',sans-serif; transition:all .2s;
-}
-.nav-user-btn:hover { background:rgba(201,168,76,.2); }
-.nav-avatar { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,var(--gold),var(--navy3)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:var(--navy); flex-shrink:0; }
-.nav-login-btn { background:transparent; border:1px solid rgba(201,168,76,.35); border-radius:8px; padding:7px 16px; color:var(--gold); font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all .2s; }
-.nav-login-btn:hover { background:rgba(201,168,76,.1); }
+/* HERO */
+.hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;padding-top:64px;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 15% 55%,rgba(201,168,76,.13) 0%,transparent 55%),radial-gradient(ellipse at 85% 15%,rgba(21,45,80,.9) 0%,transparent 55%),linear-gradient(150deg,#060f1e 0%,#0d1f38 50%,#060f1e 100%);}
+.hero-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(var(--gold) 1px,transparent 1px),linear-gradient(90deg,var(--gold) 1px,transparent 1px);background-size:50px 50px;}
+.hero-orb{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.07) 0%,transparent 70%);top:-100px;left:-100px;pointer-events:none;}
+.hero-plane{position:absolute;left:-60px;top:50%;transform:translateY(-50%) rotate(-12deg);font-size:260px;opacity:.035;animation:floatPlane 9s ease-in-out infinite;}
+@keyframes floatPlane{0%,100%{transform:translateY(-50%) rotate(-12deg) translateX(0)}50%{transform:translateY(-53%) rotate(-12deg) translateX(-18px)}}
+.hero-content{position:relative;z-index:2;width:100%;max-width:1180px;margin:0 auto;padding:3rem 1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:center;}
+.hero-text{animation:fadeInRight .9s ease;}
+@keyframes fadeInRight{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+.hero-live{display:inline-flex;align-items:center;gap:8px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.28);color:var(--gold2);padding:5px 14px;border-radius:30px;font-size:12px;font-weight:700;margin-bottom:1.4rem;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:livePulse 2s infinite;}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
+.hero-title{font-size:clamp(2rem,3.8vw,3.3rem);font-weight:900;line-height:1.22;margin-bottom:1.3rem;}
+.hero-title .gold{color:var(--gold);}
+.hero-sub{font-size:1rem;color:var(--gray);line-height:1.85;margin-bottom:2rem;font-weight:400;}
+.hero-stats{display:flex;gap:2rem;}
+.stat{text-align:center;}
+.stat .num{font-size:1.8rem;font-weight:900;color:var(--gold);display:block;}
+.stat .lbl{font-size:11px;color:var(--gray);font-weight:400;}
+.stat-div{width:1px;background:rgba(201,168,76,.2);}
 
-/* =========== HERO =========== */
-.hero { min-height:100svh; position:relative; overflow:hidden; display:flex; align-items:center; padding-top:64px; }
-.hero-bg { position:absolute; inset:0; background: radial-gradient(ellipse at 15% 55%, rgba(201,168,76,.13) 0%, transparent 55%), radial-gradient(ellipse at 85% 15%, rgba(21,45,80,.9) 0%, transparent 55%), linear-gradient(150deg, #060f1e 0%, #0d1f38 50%, #060f1e 100%); }
-.hero-grid { position:absolute; inset:0; opacity:.04; background-image: linear-gradient(var(--gold) 1px,transparent 1px), linear-gradient(90deg,var(--gold) 1px,transparent 1px); background-size:50px 50px; }
-.hero-orb { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle, rgba(201,168,76,.07) 0%, transparent 70%); top:-100px; left:-100px; pointer-events:none; }
-.hero-plane { position:absolute; left:-60px; top:50%; transform:translateY(-50%) rotate(-12deg); font-size:260px; opacity:.035; animation:floatPlane 9s ease-in-out infinite; }
-@keyframes floatPlane { 0%,100%{transform:translateY(-50%) rotate(-12deg) translateX(0)} 50%{transform:translateY(-53%) rotate(-12deg) translateX(-18px)} }
-.hero-content { position:relative; z-index:2; width:100%; max-width:1180px; margin:0 auto; padding:3rem 1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:3.5rem; align-items:center; }
-.hero-text { animation:fadeInRight .9s ease; }
-@keyframes fadeInRight { from{opacity:0;transform:translateX(36px)} to{opacity:1;transform:none} }
-.hero-live { display:inline-flex; align-items:center; gap:8px; background:rgba(201,168,76,.12); border:1px solid rgba(201,168,76,.28); color:var(--gold2); padding:5px 14px; border-radius:30px; font-size:12px; font-weight:700; margin-bottom:1.4rem; }
-.live-dot { width:7px; height:7px; border-radius:50%; background:var(--gold); animation:livePulse 2s infinite; }
-@keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.5)} }
-.hero-title { font-size:clamp(2rem,3.8vw,3.3rem); font-weight:900; line-height:1.22; margin-bottom:1.3rem; }
-.hero-title .gold { color:var(--gold); }
-.hero-sub { font-size:1rem; color:var(--gray); line-height:1.85; margin-bottom:2rem; font-weight:400; }
-.hero-stats { display:flex; gap:2rem; }
-.stat { text-align:center; }
-.stat .num { font-size:1.8rem; font-weight:900; color:var(--gold); display:block; }
-.stat .lbl { font-size:11px; color:var(--gray); font-weight:400; }
-.stat-div { width:1px; background:rgba(201,168,76,.2); }
-
-/* =========== BOOKING TABS =========== */
-.booking-card { background:rgba(255,255,255,.025); backdrop-filter:blur(24px); border:1px solid rgba(201,168,76,.22); border-radius:22px; padding:1.8rem; animation:fadeInLeft .9s ease .15s both; box-shadow:0 24px 60px rgba(0,0,0,.4); }
-@keyframes fadeInLeft { from{opacity:0;transform:translateX(-36px)} to{opacity:1;transform:none} }
+/* BOOKING CARD */
+.booking-card{background:rgba(255,255,255,.025);backdrop-filter:blur(24px);border:1px solid rgba(201,168,76,.22);border-radius:22px;padding:1.8rem;animation:fadeInLeft .9s ease .15s both;box-shadow:0 24px 60px rgba(0,0,0,.4);}
+@keyframes fadeInLeft{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:none}}
 
 /* Booking type tabs */
-.booking-type-tabs { display:flex; gap:0; margin-bottom:1.2rem; background:rgba(255,255,255,.04); border-radius:10px; padding:3px; border:1px solid rgba(201,168,76,.15); }
-.btt-btn { flex:1; padding:8px 6px; background:transparent; border:none; border-radius:8px; cursor:pointer; font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; color:var(--gray); transition:all .25s; display:flex; align-items:center; justify-content:center; gap:5px; }
-.btt-btn.sel { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:var(--navy); }
+.booking-type-tabs{display:flex;gap:0;margin-bottom:1.2rem;background:rgba(255,255,255,.04);border-radius:10px;padding:3px;border:1px solid rgba(201,168,76,.15);}
+.btt-btn{flex:1;padding:8px 4px;background:transparent;border:none;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;color:var(--gray);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:4px;}
+.btt-btn.sel{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);}
 
-.card-head { display:flex; align-items:center; gap:10px; margin-bottom:1.3rem; padding-bottom:1rem; border-bottom:1px solid rgba(201,168,76,.12); }
-.card-head-ico { width:38px; height:38px; background:linear-gradient(135deg,var(--gold),var(--gold2)); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
-.card-head-txt h3 { font-size:15px; font-weight:700; color:var(--gold2); }
-.card-head-txt p  { font-size:11px; color:var(--gray); font-weight:400; }
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:1.3rem;padding-bottom:1rem;border-bottom:1px solid rgba(201,168,76,.12);}
+.card-head-ico{width:38px;height:38px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.card-head-txt h3{font-size:15px;font-weight:700;color:var(--gold2);}
+.card-head-txt p{font-size:11px;color:var(--gray);font-weight:400;}
 
 /* Steps */
-.steps-bar { display:flex; align-items:center; margin-bottom:1.3rem; }
-.s-dot { width:28px; height:28px; border-radius:50%; border:2px solid rgba(201,168,76,.28); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--gray); transition:all .35s; flex-shrink:0; }
-.s-dot.active { background:var(--gold); border-color:var(--gold); color:var(--navy); }
-.s-dot.done   { background:rgba(201,168,76,.18); border-color:var(--gold); color:var(--gold); }
-.s-line { flex:1; height:2px; background:rgba(201,168,76,.18); transition:background .35s; }
-.s-line.active { background:var(--gold); }
+.steps-bar{display:flex;align-items:center;margin-bottom:1.3rem;}
+.s-dot{width:28px;height:28px;border-radius:50%;border:2px solid rgba(201,168,76,.28);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gray);transition:all .35s;flex-shrink:0;}
+.s-dot.active{background:var(--gold);border-color:var(--gold);color:var(--navy);}
+.s-dot.done{background:rgba(201,168,76,.18);border-color:var(--gold);color:var(--gold);}
+.s-line{flex:1;height:2px;background:rgba(201,168,76,.18);transition:background .35s;}
+.s-line.active{background:var(--gold);}
 
 /* Panels */
-.panel { display:none; }
-.panel.active { display:block; animation:slideIn .35s ease; }
-@keyframes slideIn { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:none} }
-.booking-section { display:none; }
-.booking-section.active { display:block; }
+.panel{display:none;}
+.panel.active{display:block;animation:slideIn .35s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.booking-section{display:none;}
+.booking-section.active{display:block;}
 
 /* Trip type */
-.trip-types { display:flex; gap:6px; margin-bottom:14px; }
-.tt-btn { flex:1; padding:7px 4px; background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2); border-radius:8px; cursor:pointer; font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; color:var(--gray); transition:all .25s; text-align:center; }
-.tt-btn.sel { background:rgba(201,168,76,.15); border-color:var(--gold); color:var(--gold); }
+.trip-types{display:flex;gap:6px;margin-bottom:14px;}
+.tt-btn{flex:1;padding:7px 4px;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--gray);transition:all .25s;text-align:center;}
+.tt-btn.sel{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold);}
 
 /* Form */
-.frow { display:grid; gap:10px; margin-bottom:10px; }
-.frow.c2 { grid-template-columns:1fr 1fr; }
-.frow.c3 { grid-template-columns:1fr 1fr 1fr; }
-.fg { display:flex; flex-direction:column; gap:5px; }
-.fg label { font-size:11px; font-weight:700; color:var(--gold3); letter-spacing:.4px; }
-.fg input,.fg select,.fg textarea { background:rgba(255,255,255,.045); border:1px solid rgba(201,168,76,.18); border-radius:9px; color:var(--white); padding:9px 12px; font-family:'Cairo',sans-serif; font-size:13px; font-weight:400; outline:none; transition:border-color .25s,background .25s; width:100%; direction:rtl; }
-.fg input:focus,.fg select:focus,.fg textarea:focus { border-color:var(--gold); background:rgba(201,168,76,.07); }
-.fg input::placeholder { color:rgba(122,143,166,.7); }
-.fg select option { background:#0d1f38; color:#fff; }
+.frow{display:grid;gap:10px;margin-bottom:10px;}
+.frow.c2{grid-template-columns:1fr 1fr;}
+.frow.c3{grid-template-columns:1fr 1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:11px;font-weight:700;color:var(--gold3);letter-spacing:.4px;}
+.fg input,.fg select,.fg textarea{background:rgba(255,255,255,.045);border:1px solid rgba(201,168,76,.18);border-radius:9px;color:var(--white);padding:9px 12px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:400;outline:none;transition:border-color .25s,background .25s;width:100%;direction:rtl;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);background:rgba(201,168,76,.07);}
+.fg input::placeholder{color:rgba(122,143,166,.7);}
+.fg select option{background:#0d1f38;color:#fff;}
+.fg input:disabled{opacity:.45;cursor:not-allowed;}
 
-/* Airport dropdown */
-.airport-wrap { position:relative; }
-.airport-wrap input { padding-left:34px; }
-.airport-clear { position:absolute; left:8px; top:50%; transform:translateY(-50%); width:20px; height:20px; border-radius:50%; border:none; background:rgba(201,168,76,.18); color:var(--gold); font-size:13px; line-height:1; cursor:pointer; display:none; align-items:center; justify-content:center; font-family:'Cairo',sans-serif; }
-.airport-clear:hover { background:var(--gold); color:var(--navy); }
-.airport-wrap.has-val .airport-clear { display:flex; }
-.airport-list { position:absolute; top:calc(100% + 4px); right:0; left:0; background:#0d1f38; border:1px solid rgba(201,168,76,.3); border-radius:9px; max-height:240px; overflow-y:auto; z-index:50; display:none; box-shadow:0 14px 38px rgba(0,0,0,.5); }
-.airport-list.show { display:block; }
-.ap-country { font-size:10px; font-weight:700; color:var(--gold2); background:rgba(201,168,76,.08); padding:5px 12px; border-bottom:1px solid rgba(201,168,76,.12); position:sticky; top:0; }
-.ap-item { padding:8px 12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,.04); display:flex; align-items:center; justify-content:space-between; gap:8px; transition:background .15s; }
-.ap-item:hover { background:rgba(201,168,76,.12); }
-.ap-info { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
-.ap-city { font-size:13px; font-weight:700; }
-.ap-name { font-size:10px; color:var(--gray); }
-.ap-code { font-size:11px; font-weight:900; color:var(--gold); background:rgba(201,168,76,.12); border:1px solid rgba(201,168,76,.25); padding:3px 7px; border-radius:6px; font-family:monospace; flex-shrink:0; }
-.ap-empty { padding:18px 12px; text-align:center; color:var(--gray); font-size:12px; }
+/* Airport / country dropdown */
+.airport-wrap{position:relative;}
+.airport-wrap input{padding-left:34px;}
+.airport-clear{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;border:none;background:rgba(201,168,76,.18);color:var(--gold);font-size:13px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;}
+.airport-clear:hover{background:var(--gold);color:var(--navy);}
+.airport-wrap.has-val .airport-clear{display:flex;}
+.airport-list{position:absolute;top:calc(100% + 4px);right:0;left:0;background:#0d1f38;border:1px solid rgba(201,168,76,.3);border-radius:9px;max-height:220px;overflow-y:auto;z-index:50;display:none;box-shadow:0 14px 38px rgba(0,0,0,.5);}
+.airport-list.show{display:block;}
+.ap-country{font-size:10px;font-weight:700;color:var(--gold2);background:rgba(201,168,76,.08);padding:5px 12px;border-bottom:1px solid rgba(201,168,76,.12);position:sticky;top:0;}
+.ap-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .15s;}
+.ap-item:hover{background:rgba(201,168,76,.12);}
+.ap-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
+.ap-city{font-size:13px;font-weight:700;}
+.ap-name{font-size:10px;color:var(--gray);}
+.ap-code{font-size:11px;font-weight:900;color:var(--gold);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);padding:3px 7px;border-radius:6px;font-family:monospace;flex-shrink:0;}
+.ap-empty{padding:18px 12px;text-align:center;color:var(--gray);font-size:12px;}
 
 /* Pax counter */
-.pax-box { background:rgba(255,255,255,.03); border:1px solid rgba(201,168,76,.13); border-radius:9px; margin-bottom:12px; }
-.pax-row { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
-.pax-row:last-child { border-bottom:none; }
-.pax-info .pt { font-size:13px; font-weight:700; }
-.pax-info .ps { font-size:10px; color:var(--gray); display:block; }
-.pax-ctrl { display:flex; align-items:center; gap:9px; }
-.pb { width:26px; height:26px; border-radius:50%; border:1px solid rgba(201,168,76,.38); background:transparent; cursor:pointer; color:var(--gold); font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:'Cairo',sans-serif; line-height:1; }
-.pb:hover { background:var(--gold); color:var(--navy); }
-.pn { font-size:15px; font-weight:700; color:var(--gold); min-width:18px; text-align:center; }
-
-/* Pax forms */
-.pax-sec { background:rgba(255,255,255,.025); border:1px solid rgba(201,168,76,.1); border-radius:12px; padding:12px; margin-bottom:10px; }
-.pax-sec-head { display:flex; align-items:center; gap:7px; margin-bottom:10px; }
-.pax-sec-head .n { width:22px; height:22px; border-radius:50%; background:var(--gold); color:var(--navy); font-size:11px; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.pax-sec-head .t { font-size:12px; font-weight:700; color:var(--gold2); }
+.pax-box{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.13);border-radius:9px;margin-bottom:12px;}
+.pax-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);}
+.pax-row:last-child{border-bottom:none;}
+.pax-info .pt{font-size:13px;font-weight:700;}
+.pax-info .ps{font-size:10px;color:var(--gray);display:block;}
+.pax-ctrl{display:flex;align-items:center;gap:9px;}
+.pb{width:26px;height:26px;border-radius:50%;border:1px solid rgba(201,168,76,.38);background:transparent;cursor:pointer;color:var(--gold);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .2s;font-family:'Cairo',sans-serif;line-height:1;}
+.pb:hover{background:var(--gold);color:var(--navy);}
+.pn{font-size:15px;font-weight:700;color:var(--gold);min-width:18px;text-align:center;}
 
 /* Summary */
-.sum-box { background:rgba(201,168,76,.05); border:1px solid rgba(201,168,76,.18); border-radius:12px; padding:14px; margin-bottom:14px; max-height:260px; overflow-y:auto; }
-.sum-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.05); font-size:12px; }
-.sum-row:last-child { border-bottom:none; }
-.s-lbl { color:var(--gray); }
-.s-val { color:var(--white); font-weight:600; }
-.s-val.gold { color:var(--gold); }
+.sum-box{background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.18);border-radius:12px;padding:14px;margin-bottom:14px;max-height:280px;overflow-y:auto;}
+.sum-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;}
+.sum-row:last-child{border-bottom:none;}
+.s-lbl{color:var(--gray);}
+.s-val{color:var(--white);font-weight:600;}
+.s-val.gold{color:var(--gold);}
 
 /* Buttons */
-.btn-main { width:100%; padding:13px; background:linear-gradient(135deg,var(--gold),var(--gold2)); border:none; border-radius:12px; font-family:'Cairo',sans-serif; font-size:15px; font-weight:900; color:var(--navy); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .2s,box-shadow .25s; margin-top:6px; }
-.btn-main:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(201,168,76,.38); }
-.btn-outline { width:100%; padding:11px; background:transparent; border:1.5px solid var(--gold); border-radius:12px; font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; color:var(--gold); cursor:pointer; transition:all .25s; margin-top:6px; }
-.btn-outline:hover { background:rgba(201,168,76,.1); }
-.btn-ghost { width:100%; padding:9px; background:transparent; border:none; font-family:'Cairo',sans-serif; font-size:13px; color:var(--gray); cursor:pointer; transition:color .25s; margin-top:2px; }
-.btn-ghost:hover { color:var(--white); }
+.btn-main{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .2s,box-shadow .25s;margin-top:6px;}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(201,168,76,.38);}
+.btn-outline{width:100%;padding:11px;background:transparent;border:1.5px solid var(--gold);border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;color:var(--gold);cursor:pointer;transition:all .25s;margin-top:6px;}
+.btn-outline:hover{background:rgba(201,168,76,.1);}
+.btn-ghost{width:100%;padding:9px;background:transparent;border:none;font-family:'Cairo',sans-serif;font-size:13px;color:var(--gray);cursor:pointer;transition:color .25s;margin-top:2px;}
+.btn-ghost:hover{color:var(--white);}
 
 /* Success */
-.success-panel { display:none; text-align:center; padding:2rem 0; animation:scaleIn .4s ease; }
-@keyframes scaleIn { from{opacity:0;transform:scale(.88)} to{opacity:1;transform:scale(1)} }
-.success-panel .s-ico { font-size:58px; margin-bottom:.8rem; }
-.success-panel h3 { font-size:1.3rem; font-weight:900; color:var(--gold); margin-bottom:.4rem; }
-.success-panel p  { color:var(--gray); font-size:13px; line-height:1.7; }
+.success-panel{display:none;text-align:center;padding:2rem 0;animation:scaleIn .4s ease;}
+@keyframes scaleIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+.success-panel .s-ico{font-size:58px;margin-bottom:.8rem;}
+.success-panel h3{font-size:1.3rem;font-weight:900;color:var(--gold);margin-bottom:.4rem;}
+.success-panel p{color:var(--gray);font-size:13px;line-height:1.7;}
 
-/* =========== HOTEL BOOKING =========== */
-.hotel-form { }
-.hotel-stars-select { display:flex; gap:6px; margin-bottom:4px; }
-.star-opt { width:34px; height:34px; border-radius:8px; border:1px solid rgba(201,168,76,.2); background:rgba(255,255,255,.03); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--gray); transition:all .2s; font-family:'Cairo',sans-serif; font-weight:700; }
-.star-opt.sel { background:rgba(201,168,76,.18); border-color:var(--gold); color:var(--gold); }
-.amenity-grid { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
-.amenity-chip { padding:5px 10px; border-radius:20px; border:1px solid rgba(201,168,76,.2); background:rgba(255,255,255,.03); color:var(--gray); font-size:11px; font-weight:700; cursor:pointer; transition:all .2s; font-family:'Cairo',sans-serif; }
-.amenity-chip.sel { background:rgba(201,168,76,.18); border-color:var(--gold); color:var(--gold); }
+/* HOTEL */
+.hotel-stars-select{display:flex;gap:6px;margin-bottom:4px;}
+.star-opt{width:34px;height:34px;border-radius:8px;border:1px solid rgba(201,168,76,.2);background:rgba(255,255,255,.03);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--gray);transition:all .2s;font-family:'Cairo',sans-serif;font-weight:700;}
+.star-opt.sel{background:rgba(201,168,76,.18);border-color:var(--gold);color:var(--gold);}
+.amenity-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.amenity-chip{padding:5px 10px;border-radius:20px;border:1px solid rgba(201,168,76,.2);background:rgba(255,255,255,.03);color:var(--gray);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Cairo',sans-serif;}
+.amenity-chip.sel{background:rgba(201,168,76,.18);border-color:var(--gold);color:var(--gold);}
 
-/* =========== MULTI-LEG =========== */
-.leg-card { background:rgba(255,255,255,.03); border:1px solid rgba(201,168,76,.18); border-radius:12px; padding:12px; margin-bottom:8px; }
-.leg-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.leg-lbl { font-size:12px; font-weight:700; color:var(--gold2); background:rgba(201,168,76,.12); border:1px solid rgba(201,168,76,.22); padding:3px 12px; border-radius:20px; }
-.leg-remove { background:rgba(220,53,69,.1); border:1px solid rgba(220,53,69,.25); border-radius:6px; color:#ff6b6b; font-size:11px; font-weight:700; cursor:pointer; padding:4px 10px; transition:all .2s; font-family:'Cairo',sans-serif; }
-.leg-remove:hover { background:rgba(220,53,69,.25); }
-.btn-add-leg { width:100%; padding:9px; background:rgba(201,168,76,.06); border:1.5px dashed rgba(201,168,76,.3); border-radius:10px; color:var(--gold); font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all .25s; margin-top:4px; }
-.btn-add-leg:hover { background:rgba(201,168,76,.13); border-color:var(--gold); }
+/* MULTI-LEG */
+.leg-card{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.18);border-radius:12px;padding:12px;margin-bottom:8px;}
+.leg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.leg-lbl{font-size:12px;font-weight:700;color:var(--gold2);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.22);padding:3px 12px;border-radius:20px;}
+.leg-remove{background:rgba(220,53,69,.1);border:1px solid rgba(220,53,69,.25);border-radius:6px;color:#ff6b6b;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;transition:all .2s;font-family:'Cairo',sans-serif;}
+.leg-remove:hover{background:rgba(220,53,69,.25);}
+.btn-add-leg{width:100%;padding:9px;background:rgba(201,168,76,.06);border:1.5px dashed rgba(201,168,76,.3);border-radius:10px;color:var(--gold);font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .25s;margin-top:4px;}
+.btn-add-leg:hover{background:rgba(201,168,76,.13);border-color:var(--gold);}
 
-/* =========== SECTIONS =========== */
-.wrap { max-width:1180px; margin:0 auto; padding:0 1.5rem; }
-.section { padding:5rem 0; }
-.sec-title { text-align:center; margin-bottom:3rem; }
-.sec-badge { display:inline-block; background:rgba(201,168,76,.1); border:1px solid rgba(201,168,76,.22); color:var(--gold2); font-size:11px; font-weight:700; padding:4px 14px; border-radius:20px; margin-bottom:.9rem; letter-spacing:.8px; }
-.sec-title h2 { font-size:clamp(1.7rem,3vw,2.6rem); font-weight:900; margin-bottom:.6rem; }
-.sec-title p  { color:var(--gray); font-size:.95rem; line-height:1.7; }
+/* VISA */
+.visa-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.visa-type-btn{padding:16px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:14px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;color:var(--gray);transition:all .3s;text-align:center;line-height:1.5;}
+.visa-type-btn .v-icon{font-size:26px;display:block;margin-bottom:4px;}
+.visa-type-btn.sel{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold);}
+.visa-type-btn:hover{border-color:rgba(201,168,76,.5);color:var(--gold2);}
+
+/* SECTIONS */
+.wrap{max-width:1180px;margin:0 auto;padding:0 1.5rem;}
+.section{padding:5rem 0;}
+.sec-title{text-align:center;margin-bottom:3rem;}
+.sec-badge{display:inline-block;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);color:var(--gold2);font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:.9rem;letter-spacing:.8px;}
+.sec-title h2{font-size:clamp(1.7rem,3vw,2.6rem);font-weight:900;margin-bottom:.6rem;}
+.sec-title p{color:var(--gray);font-size:.95rem;line-height:1.7;}
 
 /* Features */
-.feat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1.3rem; }
-.feat-card { background:rgba(255,255,255,.025); border:1px solid rgba(201,168,76,.1); border-radius:18px; padding:1.8rem 1.4rem; transition:transform .3s,border-color .3s; position:relative; overflow:hidden; }
-.feat-card:hover { transform:translateY(-5px); border-color:rgba(201,168,76,.32); box-shadow:0 14px 38px rgba(0,0,0,.3); }
-.feat-ico { width:50px; height:50px; background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.04)); border:1px solid rgba(201,168,76,.22); border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:1.1rem; }
-.feat-card h3 { font-size:.95rem; font-weight:700; margin-bottom:.5rem; }
-.feat-card p  { color:var(--gray); font-size:.82rem; line-height:1.7; font-weight:400; }
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.3rem;}
+.feat-card{background:rgba(255,255,255,.025);border:1px solid rgba(201,168,76,.1);border-radius:18px;padding:1.8rem 1.4rem;transition:transform .3s,border-color .3s;position:relative;overflow:hidden;}
+.feat-card:hover{transform:translateY(-5px);border-color:rgba(201,168,76,.32);box-shadow:0 14px 38px rgba(0,0,0,.3);}
+.feat-ico{width:50px;height:50px;background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.04));border:1px solid rgba(201,168,76,.22);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:1.1rem;}
+.feat-card h3{font-size:.95rem;font-weight:700;margin-bottom:.5rem;}
+.feat-card p{color:var(--gray);font-size:.82rem;line-height:1.7;font-weight:400;}
 
 /* Payment */
-.pay-section { background:#07101f; border-top:1px solid rgba(201,168,76,.08); border-bottom:1px solid rgba(201,168,76,.08); padding:4.5rem 0; }
-.pay-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1.3rem; }
-.pay-card { background:rgba(255,255,255,.035); border:1px solid rgba(201,168,76,.14); border-radius:16px; padding:1.7rem; text-align:center; transition:all .3s; }
-.pay-card:hover { border-color:var(--gold); background:rgba(201,168,76,.07); transform:translateY(-4px); }
-.pay-ico { font-size:38px; margin-bottom:.9rem; }
-.pay-card h3 { font-size:.95rem; font-weight:700; color:var(--gold2); margin-bottom:.35rem; }
-.pay-card p  { font-size:11px; color:var(--gray); line-height:1.6; }
+.pay-section{background:#07101f;border-top:1px solid rgba(201,168,76,.08);border-bottom:1px solid rgba(201,168,76,.08);padding:4.5rem 0;}
+.pay-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.3rem;}
+.pay-card{background:rgba(255,255,255,.035);border:1px solid rgba(201,168,76,.14);border-radius:16px;padding:1.7rem;text-align:center;transition:all .3s;}
+.pay-card:hover{border-color:var(--gold);background:rgba(201,168,76,.07);transform:translateY(-4px);}
+.pay-ico{font-size:38px;margin-bottom:.9rem;}
+.pay-card h3{font-size:.95rem;font-weight:700;color:var(--gold2);margin-bottom:.35rem;}
+.pay-card p{font-size:11px;color:var(--gray);line-height:1.6;}
 
-/* =========== REVIEWS SECTION =========== */
-.test-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:1.3rem; }
-.test-card { background:rgba(255,255,255,.025); border:1px solid rgba(201,168,76,.1); border-radius:16px; padding:1.7rem; position:relative; }
-.test-card::before { content:'❝'; position:absolute; top:.9rem; left:1.2rem; font-size:2.8rem; color:rgba(201,168,76,.13); line-height:1; font-family:Georgia,serif; }
-.stars { color:var(--gold); font-size:13px; margin-bottom:.7rem; letter-spacing:2px; }
-.test-txt { color:var(--light); font-size:13px; line-height:1.8; margin-bottom:1.1rem; font-weight:400; }
-.test-author { display:flex; align-items:center; gap:9px; }
-.author-av { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--gold),var(--navy3)); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; color:var(--navy); flex-shrink:0; }
-.author-nm { font-size:13px; font-weight:700; }
-.author-lc { font-size:10px; color:var(--gray); }
-
-/* Write Review Box */
-.review-write-box {
-  background:rgba(255,255,255,.025); border:1px solid rgba(201,168,76,.18);
-  border-radius:18px; padding:1.8rem; margin-bottom:2.5rem;
-}
-.review-write-box h3 { font-size:1.1rem; font-weight:700; margin-bottom:1rem; color:var(--gold2); }
-.star-rating { display:flex; gap:6px; margin-bottom:1rem; flex-direction:row-reverse; justify-content:flex-end; }
-.star-rating span { font-size:28px; cursor:pointer; color:rgba(201,168,76,.25); transition:color .15s; }
-.star-rating span.active { color:var(--gold); }
-.review-write-box textarea { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2); border-radius:10px; color:#fff; padding:12px; font-family:'Cairo',sans-serif; font-size:13px; outline:none; resize:vertical; direction:rtl; }
-.review-write-box textarea:focus { border-color:var(--gold); }
-.rev-login-prompt { text-align:center; padding:1.5rem; color:var(--gray); font-size:13px; }
-.rev-login-prompt button { background:linear-gradient(135deg,var(--gold),var(--gold2)); border:none; border-radius:8px; padding:9px 22px; font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; color:var(--navy); cursor:pointer; margin-top:10px; display:inline-block; }
+/* Reviews */
+.test-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.3rem;}
+.test-card{background:rgba(255,255,255,.025);border:1px solid rgba(201,168,76,.1);border-radius:16px;padding:1.7rem;position:relative;}
+.test-card::before{content:'❝';position:absolute;top:.9rem;left:1.2rem;font-size:2.8rem;color:rgba(201,168,76,.13);line-height:1;font-family:Georgia,serif;}
+.stars{color:var(--gold);font-size:13px;margin-bottom:.7rem;letter-spacing:2px;}
+.test-txt{color:var(--light);font-size:13px;line-height:1.8;margin-bottom:1.1rem;font-weight:400;}
+.test-author{display:flex;align-items:center;gap:9px;}
+.author-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--navy3));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:var(--navy);flex-shrink:0;}
+.author-nm{font-size:13px;font-weight:700;}
+.author-lc{font-size:10px;color:var(--gray);}
+.review-write-box{background:rgba(255,255,255,.025);border:1px solid rgba(201,168,76,.18);border-radius:18px;padding:1.8rem;margin-bottom:2.5rem;}
+.review-write-box h3{font-size:1.1rem;font-weight:700;margin-bottom:1rem;color:var(--gold2);}
+.star-rating{display:flex;gap:6px;margin-bottom:1rem;flex-direction:row-reverse;justify-content:flex-end;}
+.star-rating span{font-size:28px;cursor:pointer;color:rgba(201,168,76,.25);transition:color .15s;}
+.star-rating span.active{color:var(--gold);}
+.review-write-box textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:10px;color:#fff;padding:12px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;resize:vertical;direction:rtl;}
+.review-write-box textarea:focus{border-color:var(--gold);}
+.rev-login-prompt{text-align:center;padding:1.5rem;color:var(--gray);font-size:13px;}
+.rev-login-prompt button{background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:8px;padding:9px 22px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;color:var(--navy);cursor:pointer;margin-top:10px;display:inline-block;}
 
 /* CTA */
-.cta-sec { text-align:center; padding:5rem 1.5rem; position:relative; overflow:hidden; }
-.cta-sec::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at center, rgba(201,168,76,.09) 0%, transparent 68%); }
-.cta-sec h2 { font-size:clamp(1.7rem,3vw,2.4rem); font-weight:900; margin-bottom:.9rem; position:relative; }
-.cta-sec p  { color:var(--gray); font-size:.95rem; margin-bottom:1.8rem; position:relative; }
-.cta-btn { display:inline-flex; align-items:center; gap:9px; background:linear-gradient(135deg,var(--gold),var(--gold2)); color:var(--navy); padding:15px 34px; border-radius:50px; font-family:'Cairo',sans-serif; font-size:15px; font-weight:900; text-decoration:none; transition:all .3s; position:relative; }
-.cta-btn:hover { transform:translateY(-3px); box-shadow:0 10px 34px rgba(201,168,76,.48); }
+.cta-sec{text-align:center;padding:5rem 1.5rem;position:relative;overflow:hidden;}
+.cta-sec::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(201,168,76,.09) 0%,transparent 68%);}
+.cta-sec h2{font-size:clamp(1.7rem,3vw,2.4rem);font-weight:900;margin-bottom:.9rem;position:relative;}
+.cta-sec p{color:var(--gray);font-size:.95rem;margin-bottom:1.8rem;position:relative;}
+.cta-btn{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);padding:15px 34px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;text-decoration:none;transition:all .3s;position:relative;}
+.cta-btn:hover{transform:translateY(-3px);box-shadow:0 10px 34px rgba(201,168,76,.48);}
 
 /* Footer */
-footer { background:#050d1a; border-top:1px solid rgba(201,168,76,.08); padding:2.5rem 1.5rem 1.2rem; text-align:center; }
-.foot-logo { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:.8rem; }
-.foot-logo-ico { width:34px; height:34px; background:linear-gradient(135deg,var(--gold),var(--gold2)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
-.foot-logo span { font-size:1.2rem; font-weight:900; color:var(--gold); }
-footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3rem; }
-.foot-div { border:none; border-top:1px solid rgba(255,255,255,.05); margin:1.3rem 0; }
-.foot-btm { color:rgba(122,143,166,.55); font-size:11px; }
+footer{background:#050d1a;border-top:1px solid rgba(201,168,76,.08);padding:2.5rem 1.5rem 1.2rem;text-align:center;}
+.foot-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:.8rem;}
+.foot-logo-ico{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.foot-logo span{font-size:1.2rem;font-weight:900;color:var(--gold);}
+footer .sub{color:var(--gray);font-size:12px;font-weight:400;margin-top:.3rem;}
+.foot-div{border:none;border-top:1px solid rgba(255,255,255,.05);margin:1.3rem 0;}
+.foot-btm{color:rgba(122,143,166,.55);font-size:11px;}
 
-/* WA float */
-.wa-float { position:fixed; bottom:22px; left:22px; width:54px; height:54px; border-radius:50%; background:#25D366; display:flex; align-items:center; justify-content:center; font-size:25px; cursor:pointer; box-shadow:0 4px 18px rgba(37,211,102,.38); transition:transform .3s; z-index:999; text-decoration:none; animation:waPulse 3s ease-in-out infinite; }
-@keyframes waPulse { 0%,100%{box-shadow:0 4px 18px rgba(37,211,102,.38)} 50%{box-shadow:0 4px 36px rgba(37,211,102,.65)} }
-.wa-float:hover { transform:scale(1.1); }
-.wa-label { position:fixed; bottom:30px; left:84px; background:var(--navy2); border:1px solid rgba(201,168,76,.2); color:var(--gold2); font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .3s; z-index:998; }
-.wa-float:hover ~ .wa-label { opacity:1; }
+/* WA Float */
+.wa-float{position:fixed;bottom:22px;left:22px;width:54px;height:54px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:25px;cursor:pointer;box-shadow:0 4px 18px rgba(37,211,102,.38);transition:transform .3s;z-index:999;text-decoration:none;animation:waPulse 3s ease-in-out infinite;}
+@keyframes waPulse{0%,100%{box-shadow:0 4px 18px rgba(37,211,102,.38)}50%{box-shadow:0 4px 36px rgba(37,211,102,.65)}}
+.wa-float:hover{transform:scale(1.1);}
+.wa-label{position:fixed;bottom:30px;left:84px;background:var(--navy2);border:1px solid rgba(201,168,76,.2);color:var(--gold2);font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s;z-index:998;}
+.wa-float:hover~.wa-label{opacity:1;}
 
 /* Scroll reveal */
-.reveal { opacity:0; transform:translateY(26px); transition:all .65s ease; }
-.reveal.vis { opacity:1; transform:none; }
+.reveal{opacity:0;transform:translateY(26px);transition:all .65s ease;}
+.reveal.vis{opacity:1;transform:none;}
 
-/* =========== AUTH MODAL =========== */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(6px); z-index:2000; align-items:center; justify-content:center; }
-.modal-overlay.open { display:flex; }
-.auth-modal { background:#0a1628; border:1px solid rgba(201,168,76,.25); border-radius:20px; width:420px; max-width:94vw; padding:2rem; animation:scaleIn .3s ease; position:relative; }
-.auth-modal-head { text-align:center; margin-bottom:1.5rem; }
-.auth-modal-head .ico { font-size:40px; margin-bottom:.5rem; }
-.auth-modal-head h2 { font-size:1.3rem; font-weight:900; color:var(--gold); }
-.auth-modal-head p  { color:var(--gray); font-size:13px; }
-.auth-tabs { display:flex; background:rgba(255,255,255,.04); border-radius:10px; padding:3px; margin-bottom:1.4rem; }
-.auth-tab { flex:1; padding:9px; border:none; background:transparent; border-radius:8px; font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; color:var(--gray); cursor:pointer; transition:all .2s; }
-.auth-tab.active { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:var(--navy); }
-.auth-form { display:none; }
-.auth-form.active { display:block; }
-.auth-field { margin-bottom:12px; }
-.auth-field label { display:block; font-size:11px; font-weight:700; color:var(--gold3); margin-bottom:5px; }
-.auth-field input { width:100%; background:rgba(255,255,255,.05); border:1px solid rgba(201,168,76,.2); border-radius:10px; color:#fff; padding:11px 14px; font-family:'Cairo',sans-serif; font-size:14px; outline:none; direction:rtl; transition:border-color .2s; }
-.auth-field input:focus { border-color:var(--gold); background:rgba(201,168,76,.06); }
-.auth-msg { font-size:12px; padding:8px 12px; border-radius:8px; margin-bottom:10px; text-align:center; display:none; }
-.auth-msg.ok  { background:rgba(37,211,102,.1); border:1px solid rgba(37,211,102,.3); color:#25d366; }
-.auth-msg.err { background:rgba(255,80,80,.1); border:1px solid rgba(255,80,80,.3); color:#ff8080; }
-.auth-close { position:absolute; top:14px; left:14px; width:30px; height:30px; border-radius:50%; border:1px solid rgba(201,168,76,.2); background:transparent; color:var(--gray); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
-.auth-close:hover { background:rgba(201,168,76,.1); color:var(--gold); }
+/* AUTH MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:2000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.auth-modal{background:#0a1628;border:1px solid rgba(201,168,76,.25);border-radius:20px;width:420px;max-width:94vw;padding:2rem;animation:scaleIn .3s ease;position:relative;}
+.auth-modal-head{text-align:center;margin-bottom:1.5rem;}
+.auth-modal-head .ico{font-size:40px;margin-bottom:.5rem;}
+.auth-modal-head h2{font-size:1.3rem;font-weight:900;color:var(--gold);}
+.auth-modal-head p{color:var(--gray);font-size:13px;}
+.auth-tabs{display:flex;background:rgba(255,255,255,.04);border-radius:10px;padding:3px;margin-bottom:1.4rem;}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;border-radius:8px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;}
+.auth-tab.active{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);}
+.auth-form{display:none;}
+.auth-form.active{display:block;}
+.auth-field{margin-bottom:12px;}
+.auth-field label{display:block;font-size:11px;font-weight:700;color:var(--gold3);margin-bottom:5px;}
+.auth-field input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(201,168,76,.2);border-radius:10px;color:#fff;padding:11px 14px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;direction:rtl;transition:border-color .2s;}
+.auth-field input:focus{border-color:var(--gold);background:rgba(201,168,76,.06);}
+.auth-msg{font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:10px;text-align:center;display:none;}
+.auth-msg.ok{background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.3);color:#25d366;}
+.auth-msg.err{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#ff8080;}
+.auth-close{position:absolute;top:14px;left:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(201,168,76,.2);background:transparent;color:var(--gray);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.auth-close:hover{background:rgba(201,168,76,.1);color:var(--gold);}
 
-/* =========== ADMIN PANEL =========== */
-#adminToggleBtn { position:fixed; bottom:90px; left:22px; width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#1a3a6b,#0d1f38); border:2px solid rgba(201,168,76,.5); color:#c9a84c; font-size:20px; cursor:pointer; box-shadow:0 4px 18px rgba(0,0,0,.4); z-index:1100; transition:all .3s; display:none; align-items:center; justify-content:center; }
-#adminToggleBtn:hover { transform:scale(1.1) rotate(30deg); border-color:#c9a84c; }
-#adminOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(3px); z-index:1199; }
-#adminOverlay.open { display:block; }
-#adminPanel { position:fixed; top:0; left:-440px; width:420px; max-width:97vw; height:100vh; z-index:1200; background:#0a1628; border-right:1px solid rgba(201,168,76,.2); box-shadow:6px 0 40px rgba(0,0,0,.6); display:flex; flex-direction:column; transition:left .35s cubic-bezier(.4,0,.2,1); font-family:'Cairo',sans-serif; }
-#adminPanel.open { left:0; }
-.adm-header { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid rgba(201,168,76,.15); background:linear-gradient(135deg,#060f1e,#0d1f38); flex-shrink:0; }
-.adm-logo { display:flex; align-items:center; gap:10px; }
-.adm-logo-ico { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#c9a84c,#e8c97a); display:flex; align-items:center; justify-content:center; font-size:18px; }
-.adm-title { font-size:15px; font-weight:900; color:#e8c97a; }
-.adm-sub   { font-size:10px; color:#7a8fa6; }
-.adm-close { width:32px; height:32px; border-radius:50%; border:1px solid rgba(201,168,76,.3); background:transparent; color:#7a8fa6; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
-.adm-close:hover { background:rgba(201,168,76,.15); color:#e8c97a; }
-.adm-tabs { display:flex; border-bottom:1px solid rgba(201,168,76,.12); background:#060f1e; flex-shrink:0; }
-.adm-tab { flex:1; padding:9px 2px; background:transparent; border:none; font-family:'Cairo',sans-serif; font-size:10px; font-weight:700; color:#7a8fa6; cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; }
-.adm-tab.active { color:#c9a84c; border-bottom-color:#c9a84c; }
-.adm-body { flex:1; overflow-y:auto; padding:14px; }
-.adm-body::-webkit-scrollbar { width:4px; }
-.adm-body::-webkit-scrollbar-thumb { background:rgba(201,168,76,.3); border-radius:4px; }
-.adm-tab-content { display:none; }
-.adm-tab-content.active { display:block; }
-.adm-section { background:rgba(255,255,255,.025); border:1px solid rgba(201,168,76,.1); border-radius:12px; padding:13px; margin-bottom:11px; }
-.adm-sec-title { font-size:12px; font-weight:700; color:#e8c97a; margin-bottom:9px; }
-.adm-input,.adm-textarea { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2); border-radius:8px; color:#fff; padding:8px 11px; font-family:'Cairo',sans-serif; font-size:13px; outline:none; margin-bottom:7px; direction:rtl; transition:border-color .2s; }
-.adm-input:focus,.adm-textarea:focus { border-color:#c9a84c; }
-.adm-btn { width:100%; padding:9px; background:linear-gradient(135deg,#c9a84c,#e8c97a); border:none; border-radius:8px; font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; color:#060f1e; cursor:pointer; margin-top:4px; transition:all .2s; }
-.adm-btn:hover { transform:translateY(-1px); }
-.adm-btn-save { background:linear-gradient(135deg,#1a7a4a,#25a868); color:#fff; }
-.adm-btn-danger { background:rgba(255,80,80,.15); color:#ff8080; border:1px solid rgba(255,80,80,.3); }
-.adm-stat-row { display:grid; grid-template-columns:80px 1fr 1fr; gap:6px; align-items:center; margin-bottom:8px; }
-.adm-stat-row label { font-size:11px; color:#7a8fa6; }
-.adm-input-sm { background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2); border-radius:7px; color:#fff; padding:6px 9px; font-family:'Cairo',sans-serif; font-size:12px; outline:none; direction:rtl; }
-.adm-footer { padding:12px 16px; border-top:1px solid rgba(201,168,76,.12); flex-shrink:0; }
-.adm-hint { font-size:10px; color:#7a8fa6; display:block; margin-top:3px; margin-bottom:7px; }
-
-/* Pending review card */
-.pending-card { background:rgba(255,255,255,.03); border:1px solid rgba(201,168,76,.12); border-radius:10px; padding:11px; margin-bottom:8px; }
-.pending-card .p-name { font-size:13px; font-weight:700; color:var(--gold2); }
-.pending-card .p-text { font-size:12px; color:var(--light); margin:5px 0; line-height:1.5; }
-.pending-card .p-actions { display:flex; gap:6px; }
-.p-approve { flex:1; padding:7px; background:rgba(37,211,102,.12); border:1px solid rgba(37,211,102,.3); border-radius:7px; color:#25d366; font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; cursor:pointer; }
-.p-reject  { padding:7px 12px; background:rgba(255,80,80,.1); border:1px solid rgba(255,80,80,.25); border-radius:7px; color:#ff8080; font-family:'Cairo',sans-serif; font-size:12px; cursor:pointer; }
-
-/* User Cards */
-.user-card { background:rgba(255,255,255,.03); border:1px solid rgba(201,168,76,.12); border-radius:10px; padding:10px; margin-bottom:8px; }
-.user-card-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.user-av { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#c9a84c,#0d1f38); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; color:#fff; flex-shrink:0; }
-.user-info { flex:1; min-width:0; }
-.user-name  { font-size:13px; font-weight:700; color:#e8c97a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.user-email { font-size:10px; color:#7a8fa6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; direction:ltr; text-align:right; }
-.role-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
-.role-admin     { background:rgba(201,168,76,.18); color:#e8c97a; border:1px solid rgba(201,168,76,.35); }
-.role-assistant { background:rgba(37,99,211,.18);  color:#7ab3ff; border:1px solid rgba(37,99,211,.35); }
-.role-user      { background:rgba(255,255,255,.06); color:#7a8fa6; border:1px solid rgba(255,255,255,.12); }
-.user-actions { display:flex; gap:5px; align-items:center; }
-.role-select { flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2); border-radius:7px; color:#fff; padding:5px 8px; font-family:'Cairo',sans-serif; font-size:11px; outline:none; direction:rtl; }
-.ua-btn { padding:5px 8px; border-radius:7px; border:none; cursor:pointer; font-size:13px; transition:all .2s; flex-shrink:0; }
-.ua-save  { background:rgba(37,211,102,.12); border:1px solid rgba(37,211,102,.3); }
-.ua-reset { background:rgba(201,168,76,.12); border:1px solid rgba(201,168,76,.25); }
-.ua-del   { background:rgba(255,80,80,.1);   border:1px solid rgba(255,80,80,.25); }
-.ua-btn:hover { transform:scale(1.08); }
+/* ADMIN PANEL */
+#adminToggleBtn{position:fixed;bottom:90px;left:22px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#1a3a6b,#0d1f38);border:2px solid rgba(201,168,76,.5);color:#c9a84c;font-size:20px;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.4);z-index:1100;transition:all .3s;display:none;align-items:center;justify-content:center;}
+#adminToggleBtn:hover{transform:scale(1.1) rotate(30deg);border-color:#c9a84c;}
+#adminOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:1199;}
+#adminOverlay.open{display:block;}
+#adminPanel{position:fixed;top:0;left:-440px;width:420px;max-width:97vw;height:100vh;z-index:1200;background:#0a1628;border-right:1px solid rgba(201,168,76,.2);box-shadow:6px 0 40px rgba(0,0,0,.6);display:flex;flex-direction:column;transition:left .35s cubic-bezier(.4,0,.2,1);font-family:'Cairo',sans-serif;}
+#adminPanel.open{left:0;}
+.adm-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(201,168,76,.15);background:linear-gradient(135deg,#060f1e,#0d1f38);flex-shrink:0;}
+.adm-logo{display:flex;align-items:center;gap:10px;}
+.adm-logo-ico{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#c9a84c,#e8c97a);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.adm-title{font-size:15px;font-weight:900;color:#e8c97a;}
+.adm-sub{font-size:10px;color:#7a8fa6;}
+.adm-close{width:32px;height:32px;border-radius:50%;border:1px solid rgba(201,168,76,.3);background:transparent;color:#7a8fa6;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.adm-close:hover{background:rgba(201,168,76,.15);color:#e8c97a;}
+.adm-tabs{display:flex;border-bottom:1px solid rgba(201,168,76,.12);background:#060f1e;flex-shrink:0;}
+.adm-tab{flex:1;padding:9px 2px;background:transparent;border:none;font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;color:#7a8fa6;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.adm-tab.active{color:#c9a84c;border-bottom-color:#c9a84c;}
+.adm-body{flex:1;overflow-y:auto;padding:14px;}
+.adm-body::-webkit-scrollbar{width:4px;}
+.adm-body::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:4px;}
+.adm-tab-content{display:none;}
+.adm-tab-content.active{display:block;}
+.adm-section{background:rgba(255,255,255,.025);border:1px solid rgba(201,168,76,.1);border-radius:12px;padding:13px;margin-bottom:11px;}
+.adm-sec-title{font-size:12px;font-weight:700;color:#e8c97a;margin-bottom:9px;}
+.adm-input,.adm-textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:8px;color:#fff;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;margin-bottom:7px;direction:rtl;transition:border-color .2s;}
+.adm-input:focus,.adm-textarea:focus{border-color:#c9a84c;}
+.adm-btn{width:100%;padding:9px;background:linear-gradient(135deg,#c9a84c,#e8c97a);border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;color:#060f1e;cursor:pointer;margin-top:4px;transition:all .2s;}
+.adm-btn:hover{transform:translateY(-1px);}
+.adm-btn-save{background:linear-gradient(135deg,#1a7a4a,#25a868);color:#fff;}
+.adm-stat-row{display:grid;grid-template-columns:80px 1fr 1fr;gap:6px;align-items:center;margin-bottom:8px;}
+.adm-stat-row label{font-size:11px;color:#7a8fa6;}
+.adm-input-sm{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:7px;color:#fff;padding:6px 9px;font-family:'Cairo',sans-serif;font-size:12px;outline:none;direction:rtl;}
+.adm-footer{padding:12px 16px;border-top:1px solid rgba(201,168,76,.12);flex-shrink:0;}
+.adm-hint{font-size:10px;color:#7a8fa6;display:block;margin-top:3px;margin-bottom:7px;}
+.pending-card{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.12);border-radius:10px;padding:11px;margin-bottom:8px;}
+.pending-card .p-name{font-size:13px;font-weight:700;color:var(--gold2);}
+.pending-card .p-text{font-size:12px;color:var(--light);margin:5px 0;line-height:1.5;}
+.pending-card .p-actions{display:flex;gap:6px;}
+.p-approve{flex:1;padding:7px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.3);border-radius:7px;color:#25d366;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.p-reject{padding:7px 12px;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.25);border-radius:7px;color:#ff8080;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;}
+.user-card{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.12);border-radius:10px;padding:10px;margin-bottom:8px;}
+.user-card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.user-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#c9a84c,#0d1f38);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:13px;font-weight:700;color:#e8c97a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-email{font-size:10px;color:#7a8fa6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:right;}
+.role-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.role-admin{background:rgba(201,168,76,.18);color:#e8c97a;border:1px solid rgba(201,168,76,.35);}
+.role-assistant{background:rgba(37,99,211,.18);color:#7ab3ff;border:1px solid rgba(37,99,211,.35);}
+.role-user{background:rgba(255,255,255,.06);color:#7a8fa6;border:1px solid rgba(255,255,255,.12);}
+.user-actions{display:flex;gap:5px;align-items:center;}
+.role-select{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:7px;color:#fff;padding:5px 8px;font-family:'Cairo',sans-serif;font-size:11px;outline:none;direction:rtl;}
+.ua-btn{padding:5px 8px;border-radius:7px;border:none;cursor:pointer;font-size:13px;transition:all .2s;flex-shrink:0;}
+.ua-save{background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.3);}
+.ua-reset{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);}
+.ua-del{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.25);}
+.ua-btn:hover{transform:scale(1.08);}
 
 /* Toast */
-#adminToast { position:fixed; bottom:24px; right:24px; background:#0d1f38; border:1px solid #c9a84c; color:#e8c97a; font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; padding:11px 20px; border-radius:10px; z-index:9999; opacity:0; transform:translateY(12px); transition:all .3s; pointer-events:none; box-shadow:0 6px 24px rgba(0,0,0,.4); }
-#adminToast.show { opacity:1; transform:translateY(0); }
-
-/* Loading spinner */
-.spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
+#adminToast{position:fixed;bottom:24px;right:24px;background:#0d1f38;border:1px solid #c9a84c;color:#e8c97a;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;padding:11px 20px;border-radius:10px;z-index:9999;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4);}
+#adminToast.show{opacity:1;transform:translateY(0);}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Mobile */
 @media(max-width:760px){
-  nav { padding:0 1rem; }
-  .nav-links { display:none; }
-  .hero-content { grid-template-columns:1fr; gap:2rem; padding:1.5rem 1rem; }
-  .hero-plane { font-size:150px; left:-40px; }
-  .hero-stats { gap:1.3rem; }
-  .stat .num { font-size:1.5rem; }
-  .booking-card { padding:1.3rem; border-radius:18px; }
-  .frow.c2,.frow.c3 { grid-template-columns:1fr; }
-  .trip-types { flex-wrap:wrap; }
-  .tt-btn { min-width:calc(50% - 3px); flex:unset; }
-  .feat-grid,.pay-grid,.test-grid { grid-template-columns:1fr; }
-  .section { padding:3.5rem 0; }
-  .wrap { padding:0 1rem; }
-  .hero-text { order:2; }
-  .booking-card { order:1; }
-  .hero-content { padding-top:1rem; padding-bottom:1rem; }
-  .nav-auth { gap:6px; }
-  .nav-user-btn span.uname { display:none; }
+  nav{padding:0 1rem;}
+  .nav-links{display:none;}
+  .hero-content{grid-template-columns:1fr;gap:2rem;padding:1.5rem 1rem;}
+  .hero-plane{font-size:150px;left:-40px;}
+  .hero-stats{gap:1.3rem;}
+  .stat .num{font-size:1.5rem;}
+  .booking-card{padding:1.3rem;border-radius:18px;}
+  .frow.c2,.frow.c3{grid-template-columns:1fr;}
+  .trip-types{flex-wrap:wrap;}
+  .tt-btn{min-width:calc(50% - 3px);flex:unset;}
+  .feat-grid,.pay-grid,.test-grid{grid-template-columns:1fr;}
+  .section{padding:3.5rem 0;}
+  .wrap{padding:0 1rem;}
+  .hero-text{order:2;}
+  .booking-card{order:1;}
+  .hero-content{padding-top:1rem;padding-bottom:1rem;}
+  .nav-auth{gap:6px;}
+  .nav-user-btn span.uname{display:none;}
+  .visa-type-grid{grid-template-columns:1fr 1fr;}
 }
 </style>
 </head>
@@ -773,7 +618,6 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
     <a href="#reviews">آراء العملاء</a>
     <a href="#booking" class="nav-cta">ابدأ الحجز ✈</a>
   </div>
-  <!-- Auth -->
   <div class="nav-auth" id="navAuth">
     <button class="nav-login-btn" onclick="openAuthModal('login')">تسجيل الدخول</button>
   </div>
@@ -785,12 +629,11 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
   <div class="hero-grid"></div>
   <div class="hero-orb"></div>
   <div class="hero-plane">✈</div>
-
   <div class="hero-content">
     <div class="hero-text">
       <div class="hero-live"><span class="live-dot"></span>متاحون 24 ساعة / 7 أيام</div>
       <h1 class="hero-title" id="heroTitle">سافر بـ<span class="gold">أفضل سعر</span><br>مع أعلى مستوى<br>من الخدمة</h1>
-      <p class="hero-sub" id="heroSub">سلطان ترافيل — شريكك الموثوق لحجز تذاكر الطيران والفنادق لجميع أنحاء العالم.<br>نقدم لك أفضل الأسعار مع خدمة شخصية متميزة على مدار الساعة.</p>
+      <p class="hero-sub" id="heroSub">سلطان ترافيل — شريكك الموثوق لحجز تذاكر الطيران والفنادق والتأشيرات لجميع أنحاء العالم.</p>
       <div class="hero-stats">
         <div class="stat"><span class="num" id="stat1val">+5K</span><span class="lbl" id="stat1lbl">عميل سعيد</span></div>
         <div class="stat-div"></div>
@@ -800,7 +643,7 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
       </div>
     </div>
 
-    <!-- Booking Card -->
+    <!-- BOOKING CARD -->
     <div class="booking-card" id="booking">
       <div class="card-head">
         <div class="card-head-ico" id="bookingIco">✈</div>
@@ -810,13 +653,14 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
         </div>
       </div>
 
-      <!-- Booking Type Selector -->
+      <!-- Booking Tabs -->
       <div class="booking-type-tabs">
-        <button class="btt-btn sel" onclick="switchBookingType(this,'flights')">✈️ رحلات طيران</button>
-        <button class="btt-btn" onclick="switchBookingType(this,'hotels')">🏨 حجز فنادق</button>
+        <button class="btt-btn sel" onclick="switchBookingType(this,'flights')">✈️ طيران</button>
+        <button class="btt-btn" onclick="switchBookingType(this,'hotels')">🏨 فنادق</button>
+        <button class="btt-btn" onclick="switchBookingType(this,'visas')">🛂 تأشيرات</button>
       </div>
 
-      <!-- ===== FLIGHTS SECTION ===== -->
+      <!-- ======= FLIGHTS SECTION ======= -->
       <div class="booking-section active" id="section-flights">
         <div class="steps-bar" id="stepsBar">
           <div class="s-dot active" id="sd1">1</div>
@@ -826,40 +670,75 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
           <div class="s-dot" id="sd3">3</div>
         </div>
 
-        <!-- Panel 1 -->
+        <!-- Panel 1: Trip Details -->
         <div class="panel active" id="panel1">
+          <!-- Trip type -->
           <div class="trip-types">
             <button class="tt-btn sel" onclick="setTrip(this,'ذهاب فقط')">ذهاب فقط</button>
             <button class="tt-btn" onclick="setTrip(this,'ذهاب وعودة')">ذهاب وعودة</button>
             <button class="tt-btn" onclick="setTrip(this,'متعدد الوجهات')">متعدد الوجهات</button>
           </div>
+
+          <!-- ★ نوع الرحلة: مباشر / ترانزيت -->
+          <div class="fg" style="margin-bottom:12px;">
+            <label>🛫 نوع الرحلة</label>
+            <select id="flightRouteType">
+              <option value="مباشر (Direct)">✈ مباشر (Direct)</option>
+              <option value="ترانزيت (Transit)">🔄 ترانزيت (Transit)</option>
+            </select>
+          </div>
+
+          <!-- From / To airports -->
           <div class="frow c2" id="fromToRow">
             <div class="fg"><label>✈ مطار المغادرة</label>
               <div class="airport-wrap" id="fromWrap">
-                <input type="text" id="from" placeholder="ابحث بالمدينة، الكود، الدولة..." autocomplete="off">
+                <input type="text" id="from" placeholder="ابحث بالمدينة أو الكود..." autocomplete="off">
                 <button type="button" class="airport-clear" onclick="clearAirport('from')" tabindex="-1">×</button>
                 <div class="airport-list" id="fromList"></div>
               </div>
             </div>
             <div class="fg"><label>🛬 مطار الوصول</label>
               <div class="airport-wrap" id="toWrap">
-                <input type="text" id="to" placeholder="ابحث بالمدينة، الكود، الدولة..." autocomplete="off">
+                <input type="text" id="to" placeholder="ابحث بالمدينة أو الكود..." autocomplete="off">
                 <button type="button" class="airport-clear" onclick="clearAirport('to')" tabindex="-1">×</button>
                 <div class="airport-list" id="toList"></div>
               </div>
             </div>
           </div>
+
+          <!-- Multi-destination legs -->
           <div id="multiDestContainer" style="display:none;margin-bottom:10px;">
-            <div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:700;color:var(--gold3);letter-spacing:.4px;">🗺️ رحلاتك المتعددة — حدد كل رحلة بمطاراتها وتاريخها</label></div>
+            <label style="font-size:11px;font-weight:700;color:var(--gold3);display:block;margin-bottom:8px;">🗺️ رحلاتك المتعددة</label>
             <div id="legsList"></div>
+            <button type="button" class="btn-add-leg" onclick="addLeg()">➕ إضافة رحلة</button>
           </div>
+
+          <!-- Dates -->
           <div class="frow c2" id="dateRow">
             <div class="fg"><label>📅 تاريخ المغادرة</label><input type="date" id="depDate"></div>
             <div class="fg" id="retGrp"><label>📅 تاريخ العودة</label><input type="date" id="retDate"></div>
           </div>
-          <div class="fg" style="margin-bottom:10px;"><label>💺 درجة السفر</label>
-            <select id="cabin"><option>الدرجة الاقتصادية</option><option>درجة رجال الأعمال</option><option>الدرجة الأولى</option></select>
+
+          <!-- Cabin class -->
+          <div class="fg" style="margin-bottom:10px;">
+            <label>💺 درجة السفر</label>
+            <select id="cabin">
+              <option>الدرجة الاقتصادية</option>
+              <option>درجة رجال الأعمال</option>
+              <option>الدرجة الأولى</option>
+            </select>
           </div>
+
+          <!-- ★ وزن الأمتعة -->
+          <div class="fg" style="margin-bottom:12px;">
+            <label>🧳 وزن الأمتعة</label>
+            <select id="baggage">
+              <option value="7 كيلو فقط (حقيبة يد - Hand Carry)">7 كيلو فقط (حقيبة يد)</option>
+              <option value="أكثر من 7 كيلو (شيكان - Checked Baggage)">أكثر من 7 كيلو (شيكان)</option>
+            </select>
+          </div>
+
+          <!-- Passengers -->
           <div class="fg" style="margin-bottom:14px;"><label>👥 عدد المسافرين</label>
             <div class="pax-box">
               <div class="pax-row"><div class="pax-info"><span class="pt">بالغ</span><span class="ps">12 سنة فأكثر</span></div><div class="pax-ctrl"><button class="pb" onclick="chgPax('adults',-1)">−</button><span class="pn" id="nAdults">1</span><button class="pb" onclick="chgPax('adults',1)">+</button></div></div>
@@ -867,18 +746,18 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
               <div class="pax-row"><div class="pax-info"><span class="pt">رضيع</span><span class="ps">أقل من سنتين</span></div><div class="pax-ctrl"><button class="pb" onclick="chgPax('infants',-1)">−</button><span class="pn" id="nInfants">0</span><button class="pb" onclick="chgPax('infants',1)">+</button></div></div>
             </div>
           </div>
-          <button class="btn-outline" onclick="goStep(2)">التالي: بيانات المسافرين ←</button>
+          <button class="btn-outline" onclick="goStep(2)">التالي: بيانات التواصل ←</button>
         </div>
 
-        <!-- Panel 2 -->
+        <!-- Panel 2: Contact Info -->
         <div class="panel" id="panel2">
           <div class="fg" style="margin-bottom:14px;">
             <label>📝 اسم مدخل البيانات</label>
-            <input type="text" id="dataEntryName" placeholder="اسم الشخص المسؤول عن إدخال البيانات">
+            <input type="text" id="dataEntryName" placeholder="الشخص المسؤول عن إدخال البيانات">
           </div>
-          <div style="border-top:1px solid rgba(201,168,76,.12);padding-top:12px;margin-top:6px;">
+          <div style="border-top:1px solid rgba(201,168,76,.12);padding-top:12px;">
             <div class="frow c2">
-              <div class="fg"><label>📞 اسم التواصل</label><input type="text" id="cName" placeholder="اسمك بالكامل"></div>
+              <div class="fg"><label>📞 اسم التواصل</label><input type="text" id="cName" placeholder="الاسم بالكامل"></div>
               <div class="fg"><label>رقم الهاتف</label><input type="tel" id="cPhone" placeholder="01XXXXXXXXX"></div>
             </div>
             <div class="fg"><label>📧 البريد الإلكتروني (اختياري)</label><input type="email" id="cEmail" placeholder="your@email.com"></div>
@@ -887,146 +766,212 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
           <button class="btn-ghost" onclick="goStep(1)">→ رجوع</button>
         </div>
 
-        <!-- Panel 3 -->
+        <!-- Panel 3: Summary -->
         <div class="panel" id="panel3">
           <div class="sum-box" id="sumContent"></div>
-          <button class="btn-main" onclick="sendWA()"><span>إرسال الطلب عبر واتساب ✅</span></button>
+          <button class="btn-main" onclick="sendWA()">إرسال الطلب عبر واتساب ✅</button>
           <button class="btn-ghost" onclick="goStep(2)">→ تعديل البيانات</button>
         </div>
 
         <div class="success-panel" id="successPanel">
           <div class="s-ico">🎉</div>
           <h3>تم إرسال طلبك بنجاح!</h3>
-          <p>سيتواصل معك فريق سلطان ترافيل في أقرب وقت<br>لتزويدك بأفضل الأسعار والعروض المتاحة.</p>
+          <p>سيتواصل معك فريق سلطان ترافيل في أقرب وقت<br>لتزويدك بأفضل الأسعار المتاحة.</p>
         </div>
       </div>
 
-      <!-- ===== HOTELS SECTION ===== -->
+      <!-- ======= HOTELS SECTION ======= -->
       <div class="booking-section" id="section-hotels">
-        <div class="hotel-form">
-          <!-- Step indicator -->
-          <div class="steps-bar">
-            <div class="s-dot active" id="hsd1">1</div>
-            <div class="s-line" id="hsl1"></div>
-            <div class="s-dot" id="hsd2">2</div>
+        <div class="steps-bar">
+          <div class="s-dot active" id="hsd1">1</div>
+          <div class="s-line" id="hsl1"></div>
+          <div class="s-dot" id="hsd2">2</div>
+        </div>
+
+        <div class="panel active" id="hpanel1">
+          <!-- ★ Country / City search -->
+          <div class="frow c2">
+            <div class="fg">
+              <label>🌍 الدولة</label>
+              <div class="airport-wrap" id="hcountry-wrap">
+                <input type="text" id="h-country" placeholder="ابحث عن الدولة..." autocomplete="off">
+                <button type="button" class="airport-clear" onclick="clearHotelCountry()" tabindex="-1">×</button>
+                <div class="airport-list" id="hcountry-list"></div>
+              </div>
+            </div>
+            <div class="fg">
+              <label>🏙️ المدينة</label>
+              <div class="airport-wrap" id="hcity-wrap">
+                <input type="text" id="h-city" placeholder="اختر الدولة أولاً..." autocomplete="off" disabled>
+                <button type="button" class="airport-clear" onclick="clearHotelCity()" tabindex="-1">×</button>
+                <div class="airport-list" id="hcity-list"></div>
+              </div>
+            </div>
           </div>
 
-          <div class="panel active" id="hpanel1">
-            <div class="frow c2">
-              <div class="fg">
-                <label>📍 مدينة / دولة الوجهة</label>
-                <input type="text" id="h-city" placeholder="مثال: دبي، باريس، تركيا...">
-              </div>
-              <div class="fg">
-                <label>🏨 اسم الفندق (اختياري)</label>
-                <input type="text" id="h-name" placeholder="إذا كان لديك تفضيل محدد">
-              </div>
-            </div>
-            <div class="frow c2">
-              <div class="fg">
-                <label>📅 تاريخ الوصول (Check-in)</label>
-                <input type="date" id="h-checkin">
-              </div>
-              <div class="fg">
-                <label>📅 تاريخ المغادرة (Check-out)</label>
-                <input type="date" id="h-checkout">
-              </div>
-            </div>
-            <div class="frow c2">
-              <div class="fg">
-                <label>🛏️ عدد الغرف</label>
-                <select id="h-rooms">
-                  <option>1 غرفة</option><option>2 غرفة</option><option>3 غرف</option>
-                  <option>4 غرف</option><option>5 غرف أو أكثر</option>
-                </select>
-              </div>
-              <div class="fg">
-                <label>🛏️ نوع الغرفة</label>
-                <select id="h-roomtype">
-                  <option>غرفة مفردة (Single)</option>
-                  <option>غرفة مزدوجة (Double)</option>
-                  <option>غرفة توأم (Twin)</option>
-                  <option>جناح (Suite)</option>
-                  <option>غرفة عائلية (Family)</option>
-                </select>
-              </div>
-            </div>
-            <div class="fg" style="margin-bottom:10px;">
-              <label>⭐ تصنيف الفندق المفضل</label>
-              <div class="hotel-stars-select" id="hotelStarsSelect">
-                <button class="star-opt" onclick="selectHotelStar(this,'2')">2★</button>
-                <button class="star-opt" onclick="selectHotelStar(this,'3')">3★</button>
-                <button class="star-opt" onclick="selectHotelStar(this,'4')">4★</button>
-                <button class="star-opt" onclick="selectHotelStar(this,'5')">5★</button>
-                <button class="star-opt sel" onclick="selectHotelStar(this,'أي تصنيف')">أي تصنيف</button>
-              </div>
-            </div>
-            <div class="fg" style="margin-bottom:10px;">
-              <label>👥 عدد الأشخاص</label>
-              <div class="pax-box">
-                <div class="pax-row"><div class="pax-info"><span class="pt">بالغ</span><span class="ps">12 سنة فأكثر</span></div><div class="pax-ctrl"><button class="pb" onclick="chgHPax('hadults',-1)">−</button><span class="pn" id="nHAdults">1</span><button class="pb" onclick="chgHPax('hadults',1)">+</button></div></div>
-                <div class="pax-row"><div class="pax-info"><span class="pt">أطفال</span><span class="ps">أقل من 12 سنة</span></div><div class="pax-ctrl"><button class="pb" onclick="chgHPax('hchildren',-1)">−</button><span class="pn" id="nHChildren">0</span><button class="pb" onclick="chgHPax('hchildren',1)">+</button></div></div>
-              </div>
-            </div>
-            <button class="btn-outline" onclick="goHotelStep(2)">التالي: بيانات التواصل ←</button>
+          <div class="fg" style="margin-bottom:10px;">
+            <label>🏨 اسم الفندق (اختياري)</label>
+            <input type="text" id="h-name" placeholder="إذا كان لديك تفضيل محدد">
           </div>
 
-          <div class="panel" id="hpanel2">
-            <div class="fg" style="margin-bottom:10px;">
-              <label>🍽️ نظام الإقامة المفضل</label>
-              <select id="h-board">
-                <option>بدون وجبات (Room Only)</option>
-                <option>إفطار فقط (B&B)</option>
-                <option>نصف إقامة (Half Board)</option>
-                <option>إقامة كاملة (Full Board)</option>
-                <option>كل شيء شامل (All Inclusive)</option>
+          <div class="frow c2">
+            <div class="fg"><label>📅 Check-in (وصول)</label><input type="date" id="h-checkin"></div>
+            <div class="fg"><label>📅 Check-out (مغادرة)</label><input type="date" id="h-checkout"></div>
+          </div>
+
+          <div class="frow c2">
+            <div class="fg"><label>🛏️ عدد الغرف</label>
+              <select id="h-rooms"><option>1 غرفة</option><option>2 غرفة</option><option>3 غرف</option><option>4 غرف</option><option>5 غرف أو أكثر</option></select>
+            </div>
+            <div class="fg"><label>🛏️ نوع الغرفة</label>
+              <select id="h-roomtype">
+                <option>مفردة (Single)</option><option>مزدوجة (Double)</option>
+                <option>توأم (Twin)</option><option>جناح (Suite)</option><option>عائلية (Family)</option>
               </select>
             </div>
-            <div class="fg" style="margin-bottom:10px;">
-              <label>💰 الميزانية التقريبية لليلة (بالدولار $)</label>
-              <select id="h-budget">
-                <option>أقل من $50</option>
-                <option>$50 - $100</option>
-                <option>$100 - $200</option>
-                <option>$200 - $400</option>
-                <option>أكثر من $400</option>
-                <option>مفتوح (أفضل سعر)</option>
-              </select>
-            </div>
-            <div class="fg" style="margin-bottom:10px;">
-              <label>🏊 المرافق المطلوبة (اختر ما تريد)</label>
-              <div class="amenity-grid" id="amenityGrid">
-                <button class="amenity-chip" onclick="toggleAmenity(this)">🏊 مسبح</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">🏋️ جيم</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">🌊 شاطئ</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">🅿️ موقف سيارات</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">📶 واي فاي مجاني</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">🍽️ مطعم</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">🛎️ خدمة 24 ساعة</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">♿ مناسب لذوي الاحتياجات</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">🚗 ترانسفير مطار</button>
-                <button class="amenity-chip" onclick="toggleAmenity(this)">👶 مناسب للأطفال</button>
-              </div>
-            </div>
-            <div class="fg" style="margin-bottom:10px;">
-              <label>📝 ملاحظات إضافية</label>
-              <textarea id="h-notes" rows="2" placeholder="أي طلبات خاصة أو تفاصيل إضافية..."></textarea>
-            </div>
-            <div style="border-top:1px solid rgba(201,168,76,.12);padding-top:12px;margin-top:4px;">
-              <div class="frow c2">
-                <div class="fg"><label>📞 اسم التواصل</label><input type="text" id="h-cname" placeholder="اسمك بالكامل"></div>
-                <div class="fg"><label>رقم الهاتف</label><input type="tel" id="h-cphone" placeholder="01XXXXXXXXX"></div>
-              </div>
-            </div>
-            <button class="btn-main" onclick="sendHotelWA()"><span>إرسال طلب الفندق عبر واتساب 🏨</span></button>
-            <button class="btn-ghost" onclick="goHotelStep(1)">→ رجوع</button>
           </div>
 
-          <div class="success-panel" id="hotelSuccessPanel">
-            <div class="s-ico">🏨</div>
-            <h3>تم إرسال طلب الفندق!</h3>
-            <p>سيتواصل معك فريقنا بأفضل خيارات الفنادق المتاحة<br>بأسعار تنافسية لا تجدها في أي مكان آخر.</p>
+          <div class="fg" style="margin-bottom:10px;">
+            <label>⭐ تصنيف الفندق</label>
+            <div class="hotel-stars-select" id="hotelStarsSelect">
+              <button class="star-opt" onclick="selectHotelStar(this,'2 نجوم')">2★</button>
+              <button class="star-opt" onclick="selectHotelStar(this,'3 نجوم')">3★</button>
+              <button class="star-opt" onclick="selectHotelStar(this,'4 نجوم')">4★</button>
+              <button class="star-opt" onclick="selectHotelStar(this,'5 نجوم')">5★</button>
+              <button class="star-opt sel" onclick="selectHotelStar(this,'أي تصنيف')">أي</button>
+            </div>
           </div>
+
+          <div class="fg" style="margin-bottom:14px;"><label>👥 عدد الأشخاص</label>
+            <div class="pax-box">
+              <div class="pax-row"><div class="pax-info"><span class="pt">بالغ</span><span class="ps">12 سنة فأكثر</span></div><div class="pax-ctrl"><button class="pb" onclick="chgHPax('hadults',-1)">−</button><span class="pn" id="nHAdults">1</span><button class="pb" onclick="chgHPax('hadults',1)">+</button></div></div>
+              <div class="pax-row"><div class="pax-info"><span class="pt">أطفال</span><span class="ps">من 2 إلى 11 سنة</span></div><div class="pax-ctrl"><button class="pb" onclick="chgHPax('hchildren',-1)">−</button><span class="pn" id="nHChildren">0</span><button class="pb" onclick="chgHPax('hchildren',1)">+</button></div></div>
+              <!-- ★ رضيع جديد -->
+              <div class="pax-row"><div class="pax-info"><span class="pt">رضيع</span><span class="ps">أقل من سنتين</span></div><div class="pax-ctrl"><button class="pb" onclick="chgHPax('hinfants',-1)">−</button><span class="pn" id="nHInfants">0</span><button class="pb" onclick="chgHPax('hinfants',1)">+</button></div></div>
+            </div>
+          </div>
+          <button class="btn-outline" onclick="goHotelStep(2)">التالي: تفاصيل إضافية ←</button>
+        </div>
+
+        <div class="panel" id="hpanel2">
+          <div class="fg" style="margin-bottom:10px;">
+            <label>🍽️ نظام الإقامة</label>
+            <select id="h-board">
+              <option>بدون وجبات (Room Only)</option><option>إفطار فقط (B&B)</option>
+              <option>نصف إقامة (Half Board)</option><option>إقامة كاملة (Full Board)</option>
+              <option>كل شيء شامل (All Inclusive)</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:10px;">
+            <label>💰 الميزانية/ليلة ($)</label>
+            <select id="h-budget">
+              <option>أقل من $50</option><option>$50 - $100</option><option>$100 - $200</option>
+              <option>$200 - $400</option><option>أكثر من $400</option><option>مفتوح (أفضل سعر)</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:10px;">
+            <label>🏊 المرافق المطلوبة</label>
+            <div class="amenity-grid" id="amenityGrid">
+              <button class="amenity-chip" onclick="toggleAmenity(this)">🏊 مسبح</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">🏋️ جيم</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">🌊 شاطئ</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">🅿️ موقف</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">📶 واي فاي</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">🍽️ مطعم</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">🛎️ خدمة 24ساعة</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">♿ ذوي احتياجات</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">🚗 ترانسفير</button>
+              <button class="amenity-chip" onclick="toggleAmenity(this)">👶 مناسب أطفال</button>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:10px;">
+            <label>📝 ملاحظات إضافية</label>
+            <textarea id="h-notes" rows="2" placeholder="أي طلبات خاصة..."></textarea>
+          </div>
+          <div style="border-top:1px solid rgba(201,168,76,.12);padding-top:12px;">
+            <div class="fg" style="margin-bottom:10px;"><label>📝 اسم مدخل البيانات</label><input type="text" id="h-dataentry" placeholder="الشخص المسؤول عن إدخال البيانات"></div>
+            <div class="frow c2">
+              <div class="fg"><label>📞 اسم التواصل</label><input type="text" id="h-cname" placeholder="اسمك بالكامل"></div>
+              <div class="fg"><label>رقم الهاتف</label><input type="tel" id="h-cphone" placeholder="01XXXXXXXXX"></div>
+            </div>
+          </div>
+          <button class="btn-main" onclick="sendHotelWA()">إرسال طلب الفندق عبر واتساب 🏨</button>
+          <button class="btn-ghost" onclick="goHotelStep(1)">→ رجوع</button>
+        </div>
+
+        <div class="success-panel" id="hotelSuccessPanel">
+          <div class="s-ico">🏨</div>
+          <h3>تم إرسال طلب الفندق!</h3>
+          <p>سيتواصل معك فريقنا بأفضل خيارات الفنادق المتاحة.</p>
+        </div>
+      </div>
+
+      <!-- ======= VISAS SECTION ======= -->
+      <div class="booking-section" id="section-visas">
+        <div class="steps-bar">
+          <div class="s-dot active" id="vsd1">1</div>
+          <div class="s-line" id="vsl1"></div>
+          <div class="s-dot" id="vsd2">2</div>
+        </div>
+
+        <div class="panel active" id="vpanel1">
+          <div class="fg" style="margin-bottom:14px;">
+            <label style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px;display:block;">🛂 اختر نوع التأشيرة</label>
+            <div class="visa-type-grid">
+              <button class="visa-type-btn" onclick="selectVisaType(this,'تأشيرة سياحة')"><span class="v-icon">✈️</span>تأشيرة سياحة</button>
+              <button class="visa-type-btn" onclick="selectVisaType(this,'تأشيرة عمرة')"><span class="v-icon">🕌</span>تأشيرة عمرة</button>
+              <button class="visa-type-btn" onclick="selectVisaType(this,'تأشيرة حج')"><span class="v-icon">🕋</span>تأشيرة حج</button>
+              <button class="visa-type-btn" onclick="selectVisaType(this,'تأشيرة عبور')"><span class="v-icon">🔄</span>تأشيرة عبور</button>
+            </div>
+            <input type="hidden" id="visaTypeVal" value="">
+          </div>
+
+          <div class="frow c2">
+            <div class="fg">
+              <label>🌍 الدولة المقصودة</label>
+              <input type="text" id="v-country" placeholder="مثال: السعودية، تركيا...">
+            </div>
+            <div class="fg">
+              <label>👥 عدد المتقدمين</label>
+              <select id="v-num">
+                <option value="1 شخص">1 شخص</option>
+                <option value="2 أشخاص">2 أشخاص</option>
+                <option value="3 أشخاص">3 أشخاص</option>
+                <option value="4 أشخاص">4 أشخاص</option>
+                <option value="5 أشخاص">5 أشخاص</option>
+                <option value="أكثر من 5">أكثر من 5</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-outline" onclick="goVisaStep(2)" style="margin-top:8px;">التالي: بيانات التواصل ←</button>
+        </div>
+
+        <div class="panel" id="vpanel2">
+          <div class="fg" style="margin-bottom:12px;">
+            <label>📝 اسم مدخل البيانات</label>
+            <input type="text" id="v-dataentry" placeholder="الشخص المسؤول عن إدخال البيانات">
+          </div>
+          <div class="frow c2">
+            <div class="fg"><label>📞 اسم التواصل</label><input type="text" id="v-cname" placeholder="الاسم بالكامل"></div>
+            <div class="fg"><label>رقم الهاتف</label><input type="tel" id="v-cphone" placeholder="01XXXXXXXXX"></div>
+          </div>
+          <div class="fg" style="margin-bottom:14px;">
+            <label>📧 البريد الإلكتروني (اختياري)</label>
+            <input type="email" id="v-email" placeholder="your@email.com">
+          </div>
+
+          <!-- Summary -->
+          <div class="sum-box" id="visaSumContent"></div>
+
+          <button class="btn-main" onclick="sendVisaWA()">إرسال طلب التأشيرة عبر واتساب 🛂</button>
+          <button class="btn-ghost" onclick="goVisaStep(1)">→ رجوع</button>
+        </div>
+
+        <div class="success-panel" id="visaSuccessPanel">
+          <div class="s-ico">🛂</div>
+          <h3>تم إرسال طلب التأشيرة!</h3>
+          <p>سيتواصل معك فريقنا في أقرب وقت<br>لمتابعة إجراءات التأشيرة معك.</p>
         </div>
       </div>
 
@@ -1045,9 +990,9 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
     <div class="feat-grid">
       <div class="feat-card reveal"><div class="feat-ico">💰</div><h3>أفضل الأسعار المضمونة</h3><p>نبحث لك في أكبر شبكة من شركات الطيران والفنادق للحصول على أفضل سعر متاح.</p></div>
       <div class="feat-card reveal"><div class="feat-ico">⚡</div><h3>رد سريع خلال دقائق</h3><p>فريقنا جاهز على مدار الساعة للرد على استفساراتك وتقديم عروض الأسعار فوراً.</p></div>
-      <div class="feat-card reveal"><div class="feat-ico">🌍</div><h3>جميع أنحاء العالم</h3><p>نحجز تذاكر وفنادق لأكثر من 200 وجهة حول العالم مع جميع شركات الطيران.</p></div>
-      <div class="feat-card reveal"><div class="feat-ico">🏨</div><h3>فنادق لكل الميزانيات</h3><p>من الفنادق الاقتصادية إلى المنتجعات الفاخرة — نجد لك ما يناسب احتياجاتك وميزانيتك.</p></div>
-      <div class="feat-card reveal"><div class="feat-ico">🛡️</div><h3>حجز آمن وموثوق</h3><p>تعاملات شفافة 100% راحة بالك أولويتنا.</p></div>
+      <div class="feat-card reveal"><div class="feat-ico">🌍</div><h3>جميع أنحاء العالم</h3><p>نحجز تذاكر وفنادق وتأشيرات لأكثر من 200 وجهة حول العالم.</p></div>
+      <div class="feat-card reveal"><div class="feat-ico">🛂</div><h3>تأشيرات بكل سهولة</h3><p>نساعدك في استخراج تأشيرات السياحة والعمرة والحج والعبور لجميع الوجهات.</p></div>
+      <div class="feat-card reveal"><div class="feat-ico">🛡️</div><h3>حجز آمن وموثوق</h3><p>تعاملات شفافة 100% — راحة بالك أولويتنا.</p></div>
       <div class="feat-card reveal"><div class="feat-ico">📱</div><h3>تواصل مباشر وسهل</h3><p>تواصل معنا عبر واتساب في أي وقت، نحن دائماً هنا لخدمتك.</p></div>
     </div>
   </div>
@@ -1063,8 +1008,8 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
     </div>
     <div class="pay-grid">
       <div class="pay-card reveal"><div class="pay-ico">📲</div><h3>InstaPay</h3><p>الدفع الفوري الرقمي عبر تطبيق البنوك المصرية — سريع وآمن في ثوانٍ</p></div>
-      <div class="pay-card reveal"><div class="pay-ico">📱</div><h3>فودافون كاش</h3><p>ادفع بسهولة من محفظتك الإلكترونية Vodafone Cash بدون رسوم إضافية</p></div>
-      <div class="pay-card reveal"><div class="pay-ico">🏦</div><h3>تحويل بنكي</h3><p>تحويل مباشر لحسابنا البنكي مع إرسال إيصال التحويل تأكيداً للدفع</p></div>
+      <div class="pay-card reveal"><div class="pay-ico">📱</div><h3>فودافون كاش</h3><p>ادفع بسهولة من محفظتك الإلكترونية Vodafone Cash</p></div>
+      <div class="pay-card reveal"><div class="pay-ico">🏦</div><h3>تحويل بنكي</h3><p>تحويل مباشر لحسابنا البنكي مع إرسال إيصال التحويل تأكيداً</p></div>
     </div>
   </div>
 </section>
@@ -1077,48 +1022,27 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
       <h2>ثقتهم تشرفنا 💬</h2>
       <p>أكثر من <span id="reviewsCount">5000</span> عميل سعيد وثقوا بـ سلطان ترافيل</p>
     </div>
-
-    <!-- Write Review -->
     <div class="review-write-box reveal" id="writeReviewBox">
-      <!-- shown if logged in -->
       <div id="reviewFormArea" style="display:none;">
         <h3>✍️ شاركنا تجربتك</h3>
         <div class="star-rating" id="starRating">
-          <span data-val="5" onclick="setStarRating(5)">★</span>
-          <span data-val="4" onclick="setStarRating(4)">★</span>
-          <span data-val="3" onclick="setStarRating(3)">★</span>
-          <span data-val="2" onclick="setStarRating(2)">★</span>
+          <span data-val="5" onclick="setStarRating(5)">★</span><span data-val="4" onclick="setStarRating(4)">★</span>
+          <span data-val="3" onclick="setStarRating(3)">★</span><span data-val="2" onclick="setStarRating(2)">★</span>
           <span data-val="1" onclick="setStarRating(1)">★</span>
         </div>
         <div style="display:none;" id="rev-rating-val" data-val="0"></div>
         <textarea id="rev-text-input" rows="3" placeholder="اكتب تجربتك مع سلطان ترافيل..."></textarea>
         <button class="btn-main" id="btn-submit-review" onclick="submitReview()" style="margin-top:10px;">إرسال التعليق 💬</button>
       </div>
-      <!-- shown if not logged in -->
       <div id="reviewLoginPrompt" class="rev-login-prompt">
-        <p>🔐 سجل دخولك لتتمكن من إضافة تعليقك وتقييمك</p>
+        <p>🔐 سجل دخولك لتتمكن من إضافة تعليقك</p>
         <button onclick="openAuthModal('login')">تسجيل الدخول / إنشاء حساب</button>
       </div>
     </div>
-
-    <!-- Reviews Grid -->
     <div class="test-grid" id="reviewsGrid">
-      <!-- Default reviews (shown before Firebase loads) -->
-      <div class="test-card reveal">
-        <div class="stars">★★★★★</div>
-        <p class="test-txt">خدمة ممتازة جداً! حجزت تذكرة لأوروبا بسعر أقل من كل المواقع اللي بحثت فيها.</p>
-        <div class="test-author"><div class="author-av">م</div><div><div class="author-nm">محمد أحمد</div><div class="author-lc">القاهرة ✈ لندن</div></div></div>
-      </div>
-      <div class="test-card reveal">
-        <div class="stars">★★★★★</div>
-        <p class="test-txt">أنا بتعامل مع سلطان ترافيل من سنتين، دايماً بلاقي أفضل سعر وخدمة راقية.</p>
-        <div class="test-author"><div class="author-av">س</div><div><div class="author-nm">سارة عبد الله</div><div class="author-lc">الإسكندرية ✈ دبي</div></div></div>
-      </div>
-      <div class="test-card reveal">
-        <div class="stars">★★★★★</div>
-        <p class="test-txt">ردوا عليّ في الليل وساعدوني أحجز تذكرة طوارئ. ناس محترمين وأسعارهم منافسة!</p>
-        <div class="test-author"><div class="author-av">خ</div><div><div class="author-nm">خالد إبراهيم</div><div class="author-lc">القاهرة ✈ نيويورك</div></div></div>
-      </div>
+      <div class="test-card reveal"><div class="stars">★★★★★</div><p class="test-txt">خدمة ممتازة جداً! حجزت تذكرة لأوروبا بسعر أقل من كل المواقع اللي بحثت فيها.</p><div class="test-author"><div class="author-av">م</div><div><div class="author-nm">محمد أحمد</div><div class="author-lc">القاهرة ✈ لندن</div></div></div></div>
+      <div class="test-card reveal"><div class="stars">★★★★★</div><p class="test-txt">أنا بتعامل مع سلطان ترافيل من سنتين، دايماً بلاقي أفضل سعر وخدمة راقية.</p><div class="test-author"><div class="author-av">س</div><div><div class="author-nm">سارة عبد الله</div><div class="author-lc">الإسكندرية ✈ دبي</div></div></div></div>
+      <div class="test-card reveal"><div class="stars">★★★★★</div><p class="test-txt">ردوا عليّ في الليل وساعدوني أحجز تذكرة طوارئ. ناس محترمين وأسعارهم منافسة!</p><div class="test-author"><div class="author-av">خ</div><div><div class="author-nm">خالد إبراهيم</div><div class="author-lc">القاهرة ✈ نيويورك</div></div></div></div>
     </div>
   </div>
 </section>
@@ -1134,35 +1058,24 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
 
 <!-- FOOTER -->
 <footer>
-  <div class="foot-logo">
-    <div class="foot-logo-ico">✈</div>
-    <span>سلطان ترافيل</span>
-  </div>
-  <p class="sub">أفضل أسعار تذاكر الطيران والفنادق لجميع أنحاء العالم</p>
+  <div class="foot-logo"><div class="foot-logo-ico">✈</div><span>سلطان ترافيل</span></div>
+  <p class="sub">أفضل أسعار تذاكر الطيران والفنادق والتأشيرات لجميع أنحاء العالم</p>
   <hr class="foot-div">
   <p class="foot-btm" id="footerCopy">© 2025 Sultan Travel — جميع الحقوق محفوظة</p>
 </footer>
 
 <!-- WA Float -->
-<a class="wa-float" id="waFloat" href="https://wa.me/201036370091" target="_blank">💬</a>
+<a class="wa-float" id="waFloat" href="https://wa.me/201036370049" target="_blank">💬</a>
 <span class="wa-label">تواصل معنا الآن!</span>
 
 <!-- Admin Toggle -->
 <button id="adminToggleBtn" onclick="toggleAdminPanel()">⚙️</button>
-
-<!-- Admin Overlay -->
 <div id="adminOverlay" onclick="closeAdminPanel()"></div>
 
 <!-- Admin Panel -->
 <div id="adminPanel">
   <div class="adm-header">
-    <div class="adm-logo">
-      <div class="adm-logo-ico">⚙️</div>
-      <div>
-        <div class="adm-title">لوحة التحكم</div>
-        <div class="adm-sub" id="admPanelSub">Sultan Travel Admin</div>
-      </div>
-    </div>
+    <div class="adm-logo"><div class="adm-logo-ico">⚙️</div><div><div class="adm-title">لوحة التحكم</div><div class="adm-sub" id="admPanelSub">Sultan Travel Admin</div></div></div>
     <button class="adm-close" onclick="closeAdminPanel()">✕</button>
   </div>
   <div class="adm-tabs">
@@ -1173,133 +1086,79 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
     <button class="adm-tab" onclick="switchAdmTab(this,'atab-wa')">📱 واتساب</button>
   </div>
   <div class="adm-body">
-
     <div class="adm-tab-content active" id="atab-general">
-      <div class="adm-section">
-        <div class="adm-sec-title">🏷️ اسم الشركة</div>
-        <input class="adm-input" id="ctrl-brand-ar" type="text" value="سلطان ترافيل" placeholder="الاسم بالعربي">
-        <input class="adm-input" id="ctrl-brand-en" type="text" value="Sultan Travel" placeholder="الاسم بالانجليزي" style="direction:ltr;">
-      </div>
-      <div class="adm-section">
-        <div class="adm-sec-title">📢 الشعار الرئيسي</div>
-        <input class="adm-input" id="ctrl-hero-line1" type="text" value="أفضل سعر" placeholder="الكلمة الذهبية">
-        <input class="adm-input" id="ctrl-hero-line2" type="text" value="مع أعلى مستوى من الخدمة" placeholder="السطر الثاني">
-      </div>
-      <div class="adm-section">
-        <div class="adm-sec-title">📝 النص التعريفي</div>
-        <textarea class="adm-textarea" id="ctrl-hero-sub" rows="3">سلطان ترافيل — شريكك الموثوق لحجز تذاكر الطيران والفنادق لجميع أنحاء العالم.</textarea>
-      </div>
-      <div class="adm-section">
-        <div class="adm-sec-title">🦶 نص الفوتر</div>
-        <input class="adm-input" id="ctrl-footer-copy" type="text" value="© 2025 Sultan Travel — جميع الحقوق محفوظة">
-      </div>
+      <div class="adm-section"><div class="adm-sec-title">🏷️ اسم الشركة</div><input class="adm-input" id="ctrl-brand-ar" type="text" value="سلطان ترافيل"><input class="adm-input" id="ctrl-brand-en" type="text" value="Sultan Travel" style="direction:ltr;"></div>
+      <div class="adm-section"><div class="adm-sec-title">📢 الشعار الرئيسي</div><input class="adm-input" id="ctrl-hero-line1" type="text" value="أفضل سعر"><input class="adm-input" id="ctrl-hero-line2" type="text" value="مع أعلى مستوى من الخدمة"></div>
+      <div class="adm-section"><div class="adm-sec-title">📝 النص التعريفي</div><textarea class="adm-textarea" id="ctrl-hero-sub" rows="3">سلطان ترافيل — شريكك الموثوق لحجز تذاكر الطيران والفنادق لجميع أنحاء العالم.</textarea></div>
+      <div class="adm-section"><div class="adm-sec-title">🦶 نص الفوتر</div><input class="adm-input" id="ctrl-footer-copy" type="text" value="© 2025 Sultan Travel — جميع الحقوق محفوظة"></div>
     </div>
-
     <div class="adm-tab-content" id="atab-stats">
-      <div class="adm-section">
-        <div class="adm-sec-title">📊 إحصائيات Hero</div>
+      <div class="adm-section"><div class="adm-sec-title">📊 إحصائيات Hero</div>
         <div class="adm-stat-row"><label>إحصاء 1</label><input class="adm-input-sm" id="ctrl-stat1" value="+5K"><input class="adm-input-sm" id="ctrl-stat1-lbl" value="عميل سعيد"></div>
         <div class="adm-stat-row"><label>إحصاء 2</label><input class="adm-input-sm" id="ctrl-stat2" value="+200"><input class="adm-input-sm" id="ctrl-stat2-lbl" value="وجهة حول العالم"></div>
         <div class="adm-stat-row"><label>إحصاء 3</label><input class="adm-input-sm" id="ctrl-stat3" value="24/7"><input class="adm-input-sm" id="ctrl-stat3-lbl" value="خدمة متواصلة"></div>
       </div>
     </div>
-
     <div class="adm-tab-content" id="atab-reviews">
-      <div class="adm-section">
-        <div class="adm-sec-title">⏳ تعليقات تنتظر الموافقة</div>
-        <div id="pendingReviewsList"><p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">لا توجد تعليقات معلقة</p></div>
-      </div>
-      <div class="adm-section">
-        <div class="adm-sec-title">✅ التعليقات المنشورة</div>
-        <div id="approvedReviewsList"><p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">جاري التحميل...</p></div>
-      </div>
+      <div class="adm-section"><div class="adm-sec-title">⏳ تعليقات معلقة</div><div id="pendingReviewsList"><p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">لا توجد تعليقات معلقة</p></div></div>
+      <div class="adm-section"><div class="adm-sec-title">✅ التعليقات المنشورة</div><div id="approvedReviewsList"><p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">جاري التحميل...</p></div></div>
       <div class="adm-section">
         <div class="adm-sec-title">✍️ إضافة تعليق مخصص</div>
-        <span class="adm-hint">التعليق هيتنشر فوراً للزوار</span>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-          <input class="adm-input" id="fake-name" type="text" placeholder="اسم العميل (مثال: أحمد محمد)" style="margin-bottom:0;">
-          <input class="adm-input" id="fake-loc"  type="text" placeholder="الموقع (مثال: القاهرة ✈ دبي)" style="margin-bottom:0;">
+          <input class="adm-input" id="fake-name" type="text" placeholder="اسم العميل" style="margin-bottom:0;">
+          <input class="adm-input" id="fake-loc"  type="text" placeholder="الموقع (القاهرة ✈ دبي)" style="margin-bottom:0;">
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <label style="font-size:11px;color:#e8c97a;white-space:nowrap;">التقييم:</label>
-          <select class="adm-input" id="fake-rating" style="margin-bottom:0;flex:1;">
-            <option value="5">⭐⭐⭐⭐⭐ ممتاز</option>
-            <option value="4">⭐⭐⭐⭐ جيد جداً</option>
-            <option value="3">⭐⭐⭐ جيد</option>
-            <option value="2">⭐⭐ مقبول</option>
-            <option value="1">⭐ ضعيف</option>
-          </select>
+          <select class="adm-input" id="fake-rating" style="margin-bottom:0;flex:1;"><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select>
         </div>
-        <textarea class="adm-textarea" id="fake-text" rows="3" placeholder="اكتب نص التعليق..."></textarea>
+        <textarea class="adm-textarea" id="fake-text" rows="3" placeholder="نص التعليق..."></textarea>
         <button class="adm-btn" id="btn-fake-review" onclick="addFakeReview()">➕ نشر التعليق</button>
       </div>
     </div>
-
     <div class="adm-tab-content" id="atab-users">
       <div class="adm-section">
         <div class="adm-sec-title">➕ إنشاء حساب جديد</div>
-        <span class="adm-hint">أنت هتفضل مسجل كـ أدمن، الحساب الجديد هيتعمل في الخلفية</span>
-        <input class="adm-input" id="new-user-name"  type="text"     placeholder="الاسم الكامل">
-        <input class="adm-input" id="new-user-email" type="email"    placeholder="البريد الإلكتروني" style="direction:ltr;">
-        <input class="adm-input" id="new-user-pass"  type="password" placeholder="كلمة السر (6 أحرف على الأقل)" style="direction:ltr;">
-        <select class="adm-input" id="new-user-role" style="margin-bottom:6px;">
-          <option value="user">👤 مستخدم عادي</option>
-          <option value="assistant">🛠 مساعد (Assistant)</option>
-          <option value="admin">👑 أدمن</option>
-        </select>
+        <span class="adm-hint">ستظل مسجلاً كأدمن، الحساب الجديد يُنشأ في الخلفية</span>
+        <input class="adm-input" id="new-user-name" type="text" placeholder="الاسم الكامل">
+        <input class="adm-input" id="new-user-email" type="email" placeholder="البريد الإلكتروني" style="direction:ltr;">
+        <input class="adm-input" id="new-user-pass" type="password" placeholder="كلمة السر" style="direction:ltr;">
+        <select class="adm-input" id="new-user-role" style="margin-bottom:6px;"><option value="user">👤 مستخدم</option><option value="assistant">🛠 مساعد</option><option value="admin">👑 أدمن</option></select>
         <button class="adm-btn" id="btn-create-user" onclick="createSubUser()">✅ إنشاء الحساب</button>
       </div>
       <div class="adm-section">
-        <div class="adm-sec-title">🔧 تعديل صلاحية يوزر بالـ UID أو الإيميل</div>
-        <span class="adm-hint">لو الـ user موجود في Auth بس مش في Firestore، حطّ الـ UID بتاعه من Firebase Console</span>
-        <input class="adm-input" id="fix-uid"   type="text" placeholder="UID المستخدم (من Firebase Console)" style="direction:ltr;font-size:11px;">
-        <input class="adm-input" id="fix-name"  type="text" placeholder="الاسم">
+        <div class="adm-sec-title">🔧 تعديل صلاحية بالـ UID</div>
+        <input class="adm-input" id="fix-uid" type="text" placeholder="UID من Firebase Console" style="direction:ltr;font-size:11px;">
+        <input class="adm-input" id="fix-name" type="text" placeholder="الاسم">
         <input class="adm-input" id="fix-email" type="email" placeholder="الإيميل" style="direction:ltr;">
-        <select class="adm-input" id="fix-role">
-          <option value="user">👤 مستخدم عادي</option>
-          <option value="assistant">🛠 مساعد</option>
-          <option value="admin">👑 أدمن</option>
-        </select>
+        <select class="adm-input" id="fix-role"><option value="user">👤 مستخدم</option><option value="assistant">🛠 مساعد</option><option value="admin">👑 أدمن</option></select>
         <button class="adm-btn" id="btn-fix-user" onclick="fixUserById()">🔧 تطبيق الصلاحية</button>
       </div>
       <div class="adm-section">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
-          <div class="adm-sec-title" style="margin:0;">👥 جميع المستخدمين</div>
-          <button onclick="loadUsers()" style="background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:#e8c97a;border-radius:7px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;">🔄 تحديث</button>
-        </div>
-        <div id="usersListContainer"><p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">اضغط تحديث لتحميل المستخدمين</p></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;"><div class="adm-sec-title" style="margin:0;">👥 المستخدمون</div><button onclick="loadUsers()" style="background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:#e8c97a;border-radius:7px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;">🔄 تحديث</button></div>
+        <div id="usersListContainer"><p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">اضغط تحديث</p></div>
       </div>
     </div>
-
     <div class="adm-tab-content" id="atab-wa">
       <div class="adm-section">
         <div class="adm-sec-title">📱 رقم واتساب</div>
-        <input class="adm-input" id="ctrl-wa-number" type="text" value="201036370091" style="direction:ltr;">
-        <span class="adm-hint">بدون + أو مسافات — مثال: 201036370091</span>
+        <input class="adm-input" id="ctrl-wa-number" type="text" value="201036370049" style="direction:ltr;">
+        <span class="adm-hint">بدون + أو مسافات — مثال: 201036370049</span>
       </div>
     </div>
-
   </div>
-  <div class="adm-footer">
-    <button class="adm-btn adm-btn-save" onclick="saveSiteSettings()">💾 حفظ التغييرات في قاعدة البيانات</button>
-  </div>
+  <div class="adm-footer"><button class="adm-btn adm-btn-save" onclick="saveSiteSettings()">💾 حفظ التغييرات</button></div>
 </div>
 
 <!-- AUTH MODAL -->
 <div class="modal-overlay" id="authModal">
   <div class="auth-modal">
     <button class="auth-close" onclick="closeAuthModal()">✕</button>
-    <div class="auth-modal-head">
-      <div class="ico">✈️</div>
-      <h2>سلطان ترافيل</h2>
-      <p>سجل دخولك للتفاعل مع المجتمع</p>
-    </div>
+    <div class="auth-modal-head"><div class="ico">✈️</div><h2>سلطان ترافيل</h2><p>سجل دخولك للتفاعل مع المجتمع</p></div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-login-btn" onclick="switchAuthTab('login')">تسجيل الدخول</button>
       <button class="auth-tab" id="tab-reg-btn" onclick="switchAuthTab('reg')">إنشاء حساب</button>
     </div>
-
-    <!-- Login Form -->
     <div class="auth-form active" id="form-login">
       <div class="auth-msg" id="msg-login"></div>
       <div class="auth-field"><label>📧 البريد الإلكتروني</label><input type="email" id="login-email" placeholder="your@email.com" style="direction:ltr;"></div>
@@ -1307,8 +1166,6 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
       <button class="btn-main" id="btn-login" onclick="doLogin()" style="margin-top:8px;">تسجيل الدخول</button>
       <p style="text-align:center;margin-top:12px;font-size:12px;color:var(--gray);">ما عندكش حساب؟ <button onclick="switchAuthTab('reg')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;">إنشاء حساب</button></p>
     </div>
-
-    <!-- Register Form -->
     <div class="auth-form" id="form-reg">
       <div class="auth-msg" id="msg-reg"></div>
       <div class="auth-field"><label>👤 الاسم الكامل</label><input type="text" id="reg-name" placeholder="اسمك بالكامل"></div>
@@ -1320,14 +1177,13 @@ footer .sub { color:var(--gray); font-size:12px; font-weight:400; margin-top:.3r
   </div>
 </div>
 
-<!-- Toast -->
 <div id="adminToast"></div>
 
 <script>
-// ===== CONFIG =====
-let WA = "201036370091";
+// ============ CONFIG ============
+let WA = "201036370049"; // ✅ رقم الواتساب المصحح
 
-// ===== AIRPORTS DATABASE =====
+// ============ AIRPORTS DATABASE ============
 const AIRPORTS = [
   ["CAI","القاهرة","مطار القاهرة الدولي","مصر"],
   ["HBE","الإسكندرية","مطار برج العرب الدولي","مصر"],
@@ -1349,19 +1205,17 @@ const AIRPORTS = [
   ["MCT","مسقط","مطار مسقط الدولي","عمان"],
   ["AMM","عمان","مطار الملكة علياء الدولي","الأردن"],
   ["BEY","بيروت","مطار رفيق الحريري الدولي","لبنان"],
-  ["DAM","دمشق","مطار دمشق الدولي","سوريا"],
-  ["BGW","بغداد","مطار بغداد الدولي","العراق"],
-  ["KRT","الخرطوم","مطار الخرطوم الدولي","السودان"],
   ["TUN","تونس","مطار تونس قرطاج الدولي","تونس"],
   ["ALG","الجزائر","مطار هواري بومدين","الجزائر"],
   ["CMN","الدار البيضاء","مطار محمد الخامس","المغرب"],
-  ["TIP","طرابلس","مطار طرابلس الدولي","ليبيا"],
   ["LHR","لندن","مطار هيثرو","المملكة المتحدة"],
   ["CDG","باريس","مطار شارل ديغول","فرنسا"],
   ["FRA","فرانكفورت","مطار فرانكفورت","ألمانيا"],
-  ["IST","إسطنبول","مطار إسطنبول الدولي","تركيا"],
+  ["IST","إسطنبول","مطار إسطنبول","تركيا"],
+  ["AYT","أنطاليا","مطار أنطاليا الدولي","تركيا"],
   ["JFK","نيويورك","مطار جون كينيدي","الولايات المتحدة"],
   ["LAX","لوس أنجلوس","مطار لوس أنجلوس الدولي","الولايات المتحدة"],
+  ["MIA","ميامي","مطار ميامي الدولي","الولايات المتحدة"],
   ["PEK","بكين","مطار بكين العاصمة","الصين"],
   ["BOM","مومباي","مطار تشاتراباتي شيفاجي","الهند"],
   ["DEL","دلهي","مطار إنديرا غاندي الدولي","الهند"],
@@ -1371,18 +1225,89 @@ const AIRPORTS = [
   ["NRT","طوكيو","مطار ناريتا الدولي","اليابان"],
   ["SYD","سيدني","مطار سيدني الدولي","أستراليا"],
   ["JNB","جوهانسبرغ","مطار أو آر تامبو","جنوب أفريقيا"],
-  ["NBO","نيروبي","مطار جومو كينياتا","كينيا"],
+  ["ATH","أثينا","مطار أثينا الدولي","اليونان"],
+  ["FCO","روما","مطار ليوناردو دافنشي","إيطاليا"],
+  ["BCN","برشلونة","مطار برشلونة الدولي","إسبانيا"],
+  ["VIE","فيينا","مطار فيينا الدولي","النمسا"],
+  ["ZRH","زيوريخ","مطار زيوريخ","سويسرا"],
+  ["TBS","تبليسي","مطار تبليسي الدولي","جورجيا"],
+  ["GYD","باكو","مطار حيدر علييف الدولي","أذربيجان"],
+  ["MLE","ماليه","مطار فيلانا الدولي","المالديف"],
+  ["CMB","كولومبو","مطار راجاباكسا","سريلانكا"],
 ];
 
-// ===== AIRPORT SEARCH =====
+// ============ HOTEL COUNTRIES & CITIES ============
+const HOTEL_COUNTRIES_CITIES = {
+  "مصر": ["القاهرة","الإسكندرية","شرم الشيخ","الغردقة","الجونة","العين السخنة","مرسى علم","الأقصر","أسوان","دهب","طابا","نويبع","مرسى مطروح","سيوة"],
+  "المملكة العربية السعودية": ["الرياض","جدة","مكة المكرمة","المدينة المنورة","الدمام","الخبر","أبها","الطائف","تبوك","العُلا","نيوم"],
+  "الإمارات العربية المتحدة": ["دبي","أبوظبي","الشارقة","عجمان","رأس الخيمة","الفجيرة","أم القيوين"],
+  "تركيا": ["إسطنبول","أنطاليا","بودروم","كابادوكيا","إزمير","ألانيا","مرمريس","طرابزون","فتحية","أنقرة"],
+  "اليونان": ["أثينا","سانتوريني","ميكونوس","رودس","كريت","كورفو","سالونيك"],
+  "إيطاليا": ["روما","ميلانو","البندقية","فلورنسا","نابولي","أمالفي","سردينيا","صقلية"],
+  "إسبانيا": ["مدريد","برشلونة","إشبيلية","غرناطة","مايوركا","إيبيزا","فالنسيا","مالقة"],
+  "فرنسا": ["باريس","نيس","كان","مرسيليا","ليون","بوردو"],
+  "المملكة المتحدة": ["لندن","مانشستر","إدنبرة","برمنغهام","ليفربول","أكسفورد"],
+  "ألمانيا": ["برلين","ميونيخ","فرانكفورت","هامبورغ","كولونيا"],
+  "الأردن": ["عمان","العقبة","البتراء","وادي رم","البحر الميت","جرش"],
+  "لبنان": ["بيروت","جبيل","صيدا","طرابلس"],
+  "المغرب": ["الدار البيضاء","مراكش","فاس","أكادير","طنجة","الرباط","الصويرة"],
+  "تونس": ["تونس","الحمامات","سوسة","صفاقس","جربة"],
+  "الجزائر": ["الجزائر","وهران","قسنطينة","عنابة","تمنراست"],
+  "إندونيسيا": ["بالي","جاكرتا","لومبوك","يوغياكارتا"],
+  "تايلاند": ["بانكوك","بوكيت","باتايا","شيانغ ماي","كو ساموي","كرابي"],
+  "ماليزيا": ["كوالالمبور","بينانج","لنكاوي","جوهور بهرو","كوتا كينابالو"],
+  "سنغافورة": ["سنغافورة"],
+  "الولايات المتحدة الأمريكية": ["نيويورك","لوس أنجلوس","ميامي","لاس فيغاس","أورلاندو","شيكاغو","سان فرانسيسكو","واشنطن","بوسطن"],
+  "كندا": ["تورنتو","فانكوفر","مونتريال","كالغاري"],
+  "أستراليا": ["سيدني","ملبورن","كيرنز","برزبان","الجولد كوست"],
+  "اليابان": ["طوكيو","أوساكا","كيوتو","هيروشيما","فوكوكا"],
+  "الصين": ["بكين","شنغهاي","هونغ كونغ","ماكاو"],
+  "الهند": ["مومباي","دلهي","غوا","جيبور","أغرا","كيرالا"],
+  "قطر": ["الدوحة"],
+  "الكويت": ["مدينة الكويت"],
+  "البحرين": ["المنامة","المحرق"],
+  "عُمان": ["مسقط","صلالة","نزوى","مسندم"],
+  "أذربيجان": ["باكو","شاماخي","قبالا","غابالا"],
+  "جورجيا": ["تبليسي","باتومي","كوتايسي","ميستيا"],
+  "أرمينيا": ["يريفان","ديليجان"],
+  "المالديف": ["ماليه","باا أتول","أري أتول","نورث ماليه أتول"],
+  "سريلانكا": ["كولومبو","كاندي","غال","إيلا"],
+  "النمسا": ["فيينا","سالزبورغ","إنسبروك"],
+  "سويسرا": ["زيوريخ","جنيف","برن","لوزان","إنترلاكن","لوتسيرن"],
+  "هولندا": ["أمستردام","روتردام","لاهاي"],
+  "بلجيكا": ["بروكسل","أنتويرب","بروج"],
+  "البرتغال": ["لشبونة","بورتو","الغارف"],
+  "كرواتيا": ["زغرب","سبليت","دوبروفنيك","هفار"],
+  "قبرص": ["نيقوسيا","ليماسول","لارنكا","بافوس"],
+  "كوريا الجنوبية": ["سيول","بوسان","جيجو"],
+  "فيتنام": ["هانوي","هو تشي مينه","هالونغ باي","دانانغ","هوي آن"],
+  "كمبوديا": ["سيام ريب","بنوم بنه"],
+  "الفلبين": ["مانيلا","بوراكاي","سيبو","بالاوان"],
+  "بولندا": ["وارسو","كراكوف","وروتسواف"],
+  "المجر": ["بودابست"],
+  "رومانيا": ["بوخارست","كلوج نابوكا","براشوف"],
+  "مالطا": ["فاليتا","سليما"],
+  "جنوب أفريقيا": ["جوهانسبرغ","كيب تاون","ديربان"],
+  "كينيا": ["نيروبي","مومباسا","مالندي"],
+  "تنزانيا": ["دار السلام","زنجبار","أروشا"],
+  "المكسيك": ["كانكون","مكسيكو سيتي","لوس كابوس","بلايا ديل كارمن"],
+  "البرازيل": ["ريو دي جانيرو","ساو باولو","فوز دو إيغواسو"],
+  "روسيا": ["موسكو","سانت بطرسبرغ","سوتشي"],
+  "إيران": ["طهران","مشهد","أصفهان","شيراز"],
+  "العراق": ["بغداد","أربيل","السليمانية","كربلاء","النجف"],
+  "السودان": ["الخرطوم"],
+  "ليبيا": ["طرابلس","بنغازي"],
+};
+
+// ============ AIRPORT SEARCH ============
 function renderAirportList(listId, query) {
   const list = document.getElementById(listId);
   const q = query.trim().toLowerCase();
   if (!q) { list.innerHTML = ''; return; }
-  const matched = AIRPORTS.filter(a => a[0].toLowerCase().includes(q) || a[1].toLowerCase().includes(q) || a[2].toLowerCase().includes(q) || a[3].toLowerCase().includes(q));
+  const matched = AIRPORTS.filter(a => a[0].toLowerCase().includes(q)||a[1].toLowerCase().includes(q)||a[2].toLowerCase().includes(q)||a[3].toLowerCase().includes(q));
   if (!matched.length) { list.innerHTML = '<div class="ap-empty">لا توجد نتائج</div>'; return; }
   const byCountry = {};
-  matched.forEach(a => { if (!byCountry[a[3]]) byCountry[a[3]]=[]; byCountry[a[3]].push(a); });
+  matched.forEach(a => { if(!byCountry[a[3]])byCountry[a[3]]=[]; byCountry[a[3]].push(a); });
   let html = '';
   Object.keys(byCountry).forEach(country => {
     html += `<div class="ap-country">${country}</div>`;
@@ -1393,32 +1318,93 @@ function renderAirportList(listId, query) {
   list.innerHTML = html;
 }
 function selectAirport(listId, code, city) {
-  const isFrom = listId === 'fromList';
-  const inputId = isFrom ? 'from' : 'to';
-  const wrapId  = isFrom ? 'fromWrap' : 'toWrap';
+  const isFrom = listId==='fromList';
+  const inputId = isFrom?'from':'to'; const wrapId = isFrom?'fromWrap':'toWrap';
   document.getElementById(inputId).value = `${city} (${code})`;
   document.getElementById(listId).classList.remove('show');
   document.getElementById(wrapId).classList.add('has-val');
 }
 function clearAirport(id) {
-  document.getElementById(id).value = '';
+  document.getElementById(id).value='';
   document.getElementById(id+'Wrap').classList.remove('has-val');
 }
 function setupAirportInput(id) {
-  const input  = document.getElementById(id);
-  const listId = id+'List';
-  const wrap   = document.getElementById(id+'Wrap');
-  input.addEventListener('input', () => {
-    renderAirportList(listId, input.value);
-    document.getElementById(listId).classList.add('show');
-    wrap.classList.toggle('has-val', input.value.length > 0);
-  });
-  document.addEventListener('click', e => { if (!wrap.contains(e.target)) document.getElementById(listId).classList.remove('show'); });
+  const input = document.getElementById(id); const listId = id+'List'; const wrap = document.getElementById(id+'Wrap');
+  input.addEventListener('input', () => { renderAirportList(listId, input.value); document.getElementById(listId).classList.add('show'); wrap.classList.toggle('has-val', input.value.length>0); });
+  document.addEventListener('click', e => { if(!wrap.contains(e.target)) document.getElementById(listId).classList.remove('show'); });
 }
 setupAirportInput('from');
 setupAirportInput('to');
 
-// ===== FLIGHTS LOGIC =====
+// ============ HOTEL COUNTRY / CITY SEARCH ============
+let _selectedHotelCountry = null;
+
+function renderHotelCountryList(query) {
+  const list = document.getElementById('hcountry-list');
+  const q = query.trim().toLowerCase();
+  const countries = Object.keys(HOTEL_COUNTRIES_CITIES);
+  const filtered = q ? countries.filter(c => c.toLowerCase().includes(q)) : countries.slice(0, 20);
+  if (!filtered.length) { list.innerHTML = '<div class="ap-empty">لا توجد نتائج</div>'; list.classList.add('show'); return; }
+  list.innerHTML = filtered.map(c => `<div class="ap-item" onclick="selectHotelCountry('${c}')"><div class="ap-info"><span class="ap-city">${c}</span></div></div>`).join('');
+  list.classList.add('show');
+}
+function selectHotelCountry(country) {
+  _selectedHotelCountry = country;
+  document.getElementById('h-country').value = country;
+  document.getElementById('hcountry-list').classList.remove('show');
+  document.getElementById('hcountry-wrap').classList.add('has-val');
+  const cityInput = document.getElementById('h-city');
+  cityInput.disabled = false;
+  cityInput.placeholder = 'ابحث عن المدينة...';
+  cityInput.value = '';
+  document.getElementById('hcity-wrap').classList.remove('has-val');
+  renderHotelCityList('');
+}
+function clearHotelCountry() {
+  _selectedHotelCountry = null;
+  document.getElementById('h-country').value = '';
+  document.getElementById('hcountry-wrap').classList.remove('has-val');
+  document.getElementById('hcountry-list').classList.remove('show');
+  const cityInput = document.getElementById('h-city');
+  cityInput.value = ''; cityInput.disabled = true; cityInput.placeholder = 'اختر الدولة أولاً...';
+  document.getElementById('hcity-wrap').classList.remove('has-val');
+  document.getElementById('hcity-list').classList.remove('show');
+}
+function renderHotelCityList(query) {
+  if (!_selectedHotelCountry) return;
+  const list = document.getElementById('hcity-list');
+  const cities = HOTEL_COUNTRIES_CITIES[_selectedHotelCountry] || [];
+  const q = query.trim().toLowerCase();
+  const filtered = q ? cities.filter(c => c.toLowerCase().includes(q)) : cities;
+  if (!filtered.length) { list.innerHTML = '<div class="ap-empty">لا توجد مدن</div>'; list.classList.add('show'); return; }
+  list.innerHTML = `<div class="ap-country">${_selectedHotelCountry}</div>` + filtered.map(c => `<div class="ap-item" onclick="selectHotelCity('${c}')"><div class="ap-info"><span class="ap-city">${c}</span></div></div>`).join('');
+  list.classList.add('show');
+}
+function selectHotelCity(city) {
+  document.getElementById('h-city').value = city;
+  document.getElementById('hcity-list').classList.remove('show');
+  document.getElementById('hcity-wrap').classList.add('has-val');
+}
+function clearHotelCity() {
+  document.getElementById('h-city').value = '';
+  document.getElementById('hcity-wrap').classList.remove('has-val');
+}
+
+// Setup hotel country input
+(function(){
+  const ci = document.getElementById('h-country');
+  const cw = document.getElementById('hcountry-wrap');
+  ci.addEventListener('input', () => { renderHotelCountryList(ci.value); cw.classList.toggle('has-val',ci.value.length>0); });
+  ci.addEventListener('focus', () => { if(!ci.value) renderHotelCountryList(''); });
+  document.addEventListener('click', e => { if(!cw.contains(e.target)) document.getElementById('hcountry-list').classList.remove('show'); });
+  const si = document.getElementById('h-city');
+  const sw = document.getElementById('hcity-wrap');
+  si.addEventListener('input', () => { renderHotelCityList(si.value); sw.classList.toggle('has-val',si.value.length>0); });
+  si.addEventListener('focus', () => renderHotelCityList(si.value));
+  document.addEventListener('click', e => { if(!sw.contains(e.target)) document.getElementById('hcity-list').classList.remove('show'); });
+})();
+
+// ============ FLIGHTS LOGIC ============
 let tripType = "ذهاب فقط";
 let pax = { adults:1, children:0, infants:0 };
 
@@ -1431,14 +1417,13 @@ function setTrip(btn, type) {
   const fromTo = document.getElementById('fromToRow');
   const multiDest = document.getElementById('multiDestContainer');
   const dateRow = document.getElementById('dateRow');
-  
   if (type === 'متعدد الوجهات') {
     if (fromTo) fromTo.style.display = 'none';
     if (dateRow) dateRow.style.display = 'none';
     if (multiDest) multiDest.style.display = 'block';
     initLegs();
   } else {
-    rg.style.opacity = type==='ذهاب فقط' ? '.4':'1';
+    rg.style.opacity = type==='ذهاب فقط'?'.4':'1';
     rd.disabled = type==='ذهاب فقط';
     if (fromTo) fromTo.style.display = 'grid';
     if (dateRow) dateRow.style.display = 'grid';
@@ -1446,8 +1431,7 @@ function setTrip(btn, type) {
   }
 }
 function chgPax(t, d) {
-  const min = t==='adults' ? 1:0;
-  pax[t] = Math.max(min, Math.min(9, pax[t]+d));
+  pax[t] = Math.max(t==='adults'?1:0, Math.min(9, pax[t]+d));
   const ids = { adults:'nAdults', children:'nChildren', infants:'nInfants' };
   document.getElementById(ids[t]).textContent = pax[t];
 }
@@ -1463,86 +1447,109 @@ function goStep(step) {
     if (i<3) document.getElementById('sl'+i).classList.toggle('active', i<step);
   }
   document.getElementById('panel'+step).classList.add('active');
-  if (step===2) buildPaxForms();
   if (step===3) buildSummary();
   document.getElementById('booking').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function v1() {
-  if (tripType === 'متعدد الوجهات') {
+  if (tripType==='متعدد الوجهات') {
     const legs = getLegsData();
-    if (legs.length < 2) { alert('⚠️ يرجى إضافة رحلتين على الأقل'); return false; }
-    for (let i = 0; i < legs.length; i++) {
+    if (legs.length<2) { alert('⚠️ يرجى إضافة رحلتين على الأقل'); return false; }
+    for (let i=0;i<legs.length;i++) {
       if (!legs[i].from) { alert(`⚠️ يرجى اختيار مطار المغادرة للرحلة ${i+1}`); return false; }
       if (!legs[i].to)   { alert(`⚠️ يرجى اختيار مطار الوصول للرحلة ${i+1}`); return false; }
       if (!legs[i].date) { alert(`⚠️ يرجى اختيار تاريخ الرحلة ${i+1}`); return false; }
     }
     return true;
-  } else {
-    if (!document.getElementById('from').value.trim() || !document.getElementById('to').value.trim()) { alert('⚠️ يرجى ملء مطارات المغادرة والوصول'); return false; }
   }
+  if (!document.getElementById('from').value.trim()||!document.getElementById('to').value.trim()) { alert('⚠️ يرجى ملء مطارات المغادرة والوصول'); return false; }
   if (!document.getElementById('depDate').value) { alert('⚠️ يرجى اختيار تاريخ المغادرة'); return false; }
   return true;
 }
 function v2() {
   if (!document.getElementById('dataEntryName').value.trim()) { alert('⚠️ يرجى إدخال اسم مدخل البيانات'); return false; }
-  if (!document.getElementById('cName').value.trim() || !document.getElementById('cPhone').value.trim()) { alert('⚠️ يرجى إدخال اسم ورقم هاتف التواصل'); return false; }
+  if (!document.getElementById('cName').value.trim()||!document.getElementById('cPhone').value.trim()) { alert('⚠️ يرجى إدخال اسم ورقم هاتف التواصل'); return false; }
   return true;
 }
-function paxTypes() {
-  return [...Array(pax.adults).fill('بالغ'),...Array(pax.children).fill('طفل'),...Array(pax.infants).fill('رضيع')];
-}
-function buildPaxForms() {
-  // تم إزالة بيانات المسافرين الشخصية - لا حاجة لبناء نماذج مسافرين
-}
 function buildSummary() {
+  const routeType = document.getElementById('flightRouteType').value;
+  const baggage   = document.getElementById('baggage').value;
   let destHtml = '';
-  if (tripType === 'متعدد الوجهات') {
+  if (tripType==='متعدد الوجهات') {
     const legs = getLegsData();
     destHtml = legs.map((l,i) => `<div class="sum-row"><span class="s-lbl">الرحلة ${i+1}</span><span class="s-val">${l.from} ← ${l.to}<br><span style="color:var(--gray);font-size:11px;">📅 ${l.date}</span></span></div>`).join('');
   }
-  
   document.getElementById('sumContent').innerHTML = `
-    ${tripType !== 'متعدد الوجهات' ? `
+    <div class="sum-row"><span class="s-lbl">نوع الرحلة</span><span class="s-val gold">${tripType} — ${routeType}</span></div>
+    ${tripType!=='متعدد الوجهات' ? `
     <div class="sum-row"><span class="s-lbl">من ← إلى</span><span class="s-val">${document.getElementById('from').value} ← ${document.getElementById('to').value}</span></div>
     <div class="sum-row"><span class="s-lbl">تاريخ المغادرة</span><span class="s-val">${document.getElementById('depDate').value}</span></div>
     ${tripType!=='ذهاب فقط'?`<div class="sum-row"><span class="s-lbl">تاريخ العودة</span><span class="s-val">${document.getElementById('retDate').value||'—'}</span></div>`:''}
     ` : destHtml}
-    <div class="sum-row"><span class="s-lbl">الدرجة</span><span class="s-val">${document.getElementById('cabin').value}</span></div>
+    <div class="sum-row"><span class="s-lbl">درجة السفر</span><span class="s-val">${document.getElementById('cabin').value}</span></div>
+    <div class="sum-row"><span class="s-lbl">الأمتعة</span><span class="s-val">${baggage}</span></div>
     <div class="sum-row"><span class="s-lbl">المسافرون</span><span class="s-val">${pax.adults} بالغ${pax.children>0?' / '+pax.children+' طفل':''}${pax.infants>0?' / '+pax.infants+' رضيع':''}</span></div>
     <div class="sum-row"><span class="s-lbl">مدخل البيانات</span><span class="s-val gold">${document.getElementById('dataEntryName').value}</span></div>
-    <div class="sum-row"><span class="s-lbl">اسم التواصل</span><span class="s-val gold">${document.getElementById('cName').value}</span></div>
-    <div class="sum-row"><span class="s-lbl">رقم الهاتف</span><span class="s-val">${document.getElementById('cPhone').value}</span></div>`;
+    <div class="sum-row"><span class="s-lbl">اسم التواصل</span><span class="s-val">${document.getElementById('cName').value}</span></div>
+    <div class="sum-row"><span class="s-lbl">رقم الهاتف</span><span class="s-val">${document.getElementById('cPhone').value}</span></div>
+    ${document.getElementById('cEmail').value?`<div class="sum-row"><span class="s-lbl">البريد</span><span class="s-val">${document.getElementById('cEmail').value}</span></div>`:''}`;
 }
+
+// ✅ FIXED sendWA function
 function sendWA() {
   const waNum = window.WA_OVERRIDE || WA;
+  const routeType = document.getElementById('flightRouteType').value;
+  const baggage   = document.getElementById('baggage').value;
   let routeText = '';
-  if (tripType === 'متعدد الوجهات') {
+  if (tripType==='متعدد الوجهات') {
     const legs = getLegsData();
-    routeText = legs.map((l,i) => `   الرحلة ${i+1}: ${l.from} ← ${l.to} | 📅 ${l.date}`).join('\\n');
+    routeText = legs.map((l,i) => `   الرحلة ${i+1}: ${l.from} ← ${l.to} | 📅 ${l.date}`).join('\n');
   }
-  
-  const msg = `✈️ *طلب حجز تذكرة — سلطان ترافيل* *تفاصيل الرحلة:*   النوع: ${tripType}   الخدمة: ${document.getElementById('flightType').value}   ${tripType !== 'متعدد الوجهات' ? `من: ${document.getElementById('from').value}   إلى: ${document.getElementById('to').value}   تاريخ المغادرة: ${document.getElementById('depDate').value}` : `الرحلات:\\n${routeText}`}   الدرجة: ${document.getElementById('cabin').value}   المسافرون: ${pax.adults} بالغ${pax.children>0?' / '+pax.children+' طفل':''}${pax.infants>0?' / '+pax.infants+' رضيع':''} *مدخل البيانات:* ${document.getElementById('dataEntryName').value}📞 *التواصل:*\\n   الاسم: ${document.getElementById('cName').value}   الهاتف: ${document.getElementById('cPhone').value}⏰ ${new Date().toLocaleString('ar-EG')}`;
-  
-  window.open(`https://wa.me/01036370091${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
+  const email = document.getElementById('cEmail').value;
+  const msg =
+`✈️ *طلب حجز تذكرة — سلطان ترافيل*
+━━━━━━━━━━━━━━━━━━
+
+🗺️ *تفاصيل الرحلة:*
+   النوع: ${tripType}
+   نوع الرحلة: ${routeType}
+${tripType!=='متعدد الوجهات'?
+`   من: ${document.getElementById('from').value}
+   إلى: ${document.getElementById('to').value}
+   تاريخ المغادرة: ${document.getElementById('depDate').value}${tripType!=='ذهاب فقط'?'\n   تاريخ العودة: '+(document.getElementById('retDate').value||'—'):''}`:
+`   الرحلات:
+${routeText}`}
+   الدرجة: ${document.getElementById('cabin').value}
+   الأمتعة: ${baggage}
+   المسافرون: ${pax.adults} بالغ${pax.children>0?' / '+pax.children+' طفل':''}${pax.infants>0?' / '+pax.infants+' رضيع':''}
+
+━━━━━━━━━━━━━━━━━━
+👤 *مدخل البيانات:* ${document.getElementById('dataEntryName').value}
+
+📞 *التواصل:*
+   الاسم: ${document.getElementById('cName').value}
+   الهاتف: ${document.getElementById('cPhone').value}${email?'\n   البريد: '+email:''}
+
+━━━━━━━━━━━━━━━━━━
+⏰ وقت الطلب: ${new Date().toLocaleString('ar-EG')}`;
+
+  window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
   for (let i=1;i<=3;i++) document.getElementById('panel'+i).classList.remove('active');
   document.getElementById('stepsBar').style.display='none';
   document.getElementById('successPanel').style.display='block';
 }
 
-// ===== HOTEL LOGIC =====
-let hPax = { hadults:1, hchildren:0 };
+// ============ HOTEL LOGIC ============
+let hPax = { hadults:1, hchildren:0, hinfants:0 };
 let selectedHotelStar = 'أي تصنيف';
 
 function chgHPax(t, d) {
-  const min = t==='hadults' ? 1:0;
-  hPax[t] = Math.max(min, Math.min(9, hPax[t]+d));
-  const ids = { hadults:'nHAdults', hchildren:'nHChildren' };
+  hPax[t] = Math.max(t==='hadults'?1:0, Math.min(9, hPax[t]+d));
+  const ids = { hadults:'nHAdults', hchildren:'nHChildren', hinfants:'nHInfants' };
   document.getElementById(ids[t]).textContent = hPax[t];
 }
 function selectHotelStar(btn, val) {
   document.querySelectorAll('#hotelStarsSelect .star-opt').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
-  selectedHotelStar = val;
+  btn.classList.add('sel'); selectedHotelStar = val;
 }
 function toggleAmenity(btn) { btn.classList.toggle('sel'); }
 function getSelectedAmenities() {
@@ -1550,15 +1557,16 @@ function getSelectedAmenities() {
 }
 function goHotelStep(step) {
   if (step===2) {
-    if (!document.getElementById('h-city').value.trim()) { alert('⚠️ يرجى إدخال مدينة / دولة الوجهة'); return; }
-    if (!document.getElementById('h-checkin').value)     { alert('⚠️ يرجى اختيار تاريخ الوصول'); return; }
-    if (!document.getElementById('h-checkout').value)    { alert('⚠️ يرجى اختيار تاريخ المغادرة'); return; }
+    if (!document.getElementById('h-country').value.trim()) { alert('⚠️ يرجى اختيار الدولة'); return; }
+    if (!document.getElementById('h-city').value.trim()) { alert('⚠️ يرجى اختيار المدينة'); return; }
+    if (!document.getElementById('h-checkin').value)  { alert('⚠️ يرجى اختيار تاريخ الوصول'); return; }
+    if (!document.getElementById('h-checkout').value) { alert('⚠️ يرجى اختيار تاريخ المغادرة'); return; }
   }
   ['hpanel1','hpanel2'].forEach((p,i) => {
     document.getElementById(p).classList.toggle('active', i===step-1);
     const dot = document.getElementById('hsd'+(i+1));
     dot.classList.remove('active','done');
-    if (i+1 < step) dot.classList.add('done');
+    if (i+1<step) dot.classList.add('done');
     else if (i+1===step) dot.classList.add('active');
     if (i<1) document.getElementById('hsl'+(i+1)).classList.toggle('active', i+1<step);
   });
@@ -1569,14 +1577,108 @@ function sendHotelWA() {
   if (!cname||!cphone) { alert('⚠️ يرجى إدخال اسم ورقم الهاتف'); return; }
   const waNum = window.WA_OVERRIDE || WA;
   const amenities = getSelectedAmenities();
-  const msg = `🏨 *طلب حجز فندق — سلطان ترافيل*\\n━━━━━━━━━━━━━━━━\\n📍 *الوجهة:* ${document.getElementById('h-city').value}\\n🏨 *الفندق المطلوب:* ${document.getElementById('h-name').value||'أفضل خيار متاح'}\\n⭐ *التصنيف:* ${selectedHotelStar}\\n📅 *تاريخ الوصول:* ${document.getElementById('h-checkin').value}\\n📅 *تاريخ المغادرة:* ${document.getElementById('h-checkout').value}\\n🛏️ *عدد الغرف:* ${document.getElementById('h-rooms').value}\\n🛏️ *نوع الغرفة:* ${document.getElementById('h-roomtype').value}\\n👥 *الأشخاص:* ${hPax.hadults} بالغ${hPax.hchildren>0?' / '+hPax.hchildren+' أطفال':''}\\n🍽️ *نظام الإقامة:* ${document.getElementById('h-board').value}\\n💰 *الميزانية/ليلة:* ${document.getElementById('h-budget').value}\\n${amenities?'🏊 *المرافق:* '+amenities:''}\\n${document.getElementById('h-notes').value?'📝 *ملاحظات:* '+document.getElementById('h-notes').value:''}\\n━━━━━━━━━━━━━━━━\\n📞 *التواصل:*\\n   الاسم: ${cname}\\n   الهاتف: ${cphone}\\n⏰ ${new Date().toLocaleString('ar-EG')}`;
+  const dataentry = document.getElementById('h-dataentry').value.trim();
+  const notes = document.getElementById('h-notes').value.trim();
+  const msg =
+`🏨 *طلب حجز فندق — سلطان ترافيل*
+━━━━━━━━━━━━━━━━━━
+
+📍 *الوجهة:*
+   الدولة: ${document.getElementById('h-country').value}
+   المدينة: ${document.getElementById('h-city').value}
+   الفندق: ${document.getElementById('h-name').value||'أفضل خيار متاح'}
+   التصنيف: ${selectedHotelStar}
+
+📅 *مواعيد الإقامة:*
+   Check-in: ${document.getElementById('h-checkin').value}
+   Check-out: ${document.getElementById('h-checkout').value}
+
+🛏️ *تفاصيل الغرفة:*
+   عدد الغرف: ${document.getElementById('h-rooms').value}
+   نوع الغرفة: ${document.getElementById('h-roomtype').value}
+
+👥 *الأشخاص:*
+   ${hPax.hadults} بالغ${hPax.hchildren>0?' / '+hPax.hchildren+' أطفال':''}${hPax.hinfants>0?' / '+hPax.hinfants+' رضيع':''}
+
+🍽️ نظام الإقامة: ${document.getElementById('h-board').value}
+💰 الميزانية/ليلة: ${document.getElementById('h-budget').value}
+${amenities?'🏊 المرافق: '+amenities:''}
+${notes?'📝 ملاحظات: '+notes:''}
+
+━━━━━━━━━━━━━━━━━━
+${dataentry?'👤 مدخل البيانات: '+dataentry+'\n':''}📞 *التواصل:*
+   الاسم: ${cname}
+   الهاتف: ${cphone}
+
+⏰ وقت الطلب: ${new Date().toLocaleString('ar-EG')}`;
+
   window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
   document.getElementById('hpanel1').classList.remove('active');
   document.getElementById('hpanel2').classList.remove('active');
   document.getElementById('hotelSuccessPanel').style.display='block';
 }
 
-// ===== BOOKING TYPE SWITCH =====
+// ============ VISA LOGIC ============
+function selectVisaType(btn, type) {
+  document.querySelectorAll('.visa-type-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('visaTypeVal').value = type;
+}
+function goVisaStep(step) {
+  if (step===2) {
+    const visaType = document.getElementById('visaTypeVal').value;
+    if (!visaType) { alert('⚠️ يرجى اختيار نوع التأشيرة'); return; }
+    const country = document.getElementById('v-country').value.trim();
+    if (!country) { alert('⚠️ يرجى إدخال الدولة المقصودة'); return; }
+    // Build summary
+    document.getElementById('visaSumContent').innerHTML = `
+      <div class="sum-row"><span class="s-lbl">نوع التأشيرة</span><span class="s-val gold">${visaType}</span></div>
+      <div class="sum-row"><span class="s-lbl">الدولة المقصودة</span><span class="s-val">${country}</span></div>
+      <div class="sum-row"><span class="s-lbl">عدد المتقدمين</span><span class="s-val">${document.getElementById('v-num').value}</span></div>`;
+  }
+  ['vpanel1','vpanel2'].forEach((p,i) => {
+    document.getElementById(p).classList.toggle('active', i===step-1);
+    const dot = document.getElementById('vsd'+(i+1));
+    dot.classList.remove('active','done');
+    if (i+1<step) dot.classList.add('done');
+    else if (i+1===step) dot.classList.add('active');
+    if (i<1) document.getElementById('vsl'+(i+1)).classList.toggle('active', i+1<step);
+  });
+}
+function sendVisaWA() {
+  const cname    = document.getElementById('v-cname').value.trim();
+  const cphone   = document.getElementById('v-cphone').value.trim();
+  const dataentry = document.getElementById('v-dataentry').value.trim();
+  if (!cname||!cphone) { alert('⚠️ يرجى إدخال اسم ورقم الهاتف'); return; }
+  const waNum  = window.WA_OVERRIDE || WA;
+  const email  = document.getElementById('v-email').value.trim();
+  const visaType = document.getElementById('visaTypeVal').value;
+  const country  = document.getElementById('v-country').value;
+  const numApp   = document.getElementById('v-num').value;
+  const msg =
+`🛂 *طلب تأشيرة — سلطان ترافيل*
+━━━━━━━━━━━━━━━━━━
+
+📋 *تفاصيل التأشيرة:*
+   النوع: ${visaType}
+   الدولة المقصودة: ${country}
+   عدد المتقدمين: ${numApp}
+
+━━━━━━━━━━━━━━━━━━
+${dataentry?'👤 مدخل البيانات: '+dataentry+'\n':''}📞 *التواصل:*
+   الاسم: ${cname}
+   الهاتف: ${cphone}${email?'\n   البريد: '+email:''}
+
+━━━━━━━━━━━━━━━━━━
+⏰ وقت الطلب: ${new Date().toLocaleString('ar-EG')}`;
+
+  window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
+  document.getElementById('vpanel1').classList.remove('active');
+  document.getElementById('vpanel2').classList.remove('active');
+  document.getElementById('visaSuccessPanel').style.display='block';
+}
+
+// ============ BOOKING TYPE SWITCH ============
 function switchBookingType(btn, type) {
   document.querySelectorAll('.btt-btn').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
@@ -1586,10 +1688,11 @@ function switchBookingType(btn, type) {
   const title = document.getElementById('bookingTitle');
   const sub = document.getElementById('bookingSubtitle');
   if (type==='flights') { ico.textContent='✈'; title.textContent='احجز رحلتك الآن'; sub.textContent='أرسل بياناتك وسنرد بأفضل سعر فوراً'; }
-  else { ico.textContent='🏨'; title.textContent='احجز فندقك الآن'; sub.textContent='أفضل الفنادق بأسعار لا تُنافَس'; }
+  else if (type==='hotels') { ico.textContent='🏨'; title.textContent='احجز فندقك الآن'; sub.textContent='أفضل الفنادق بأسعار لا تُنافَس'; }
+  else if (type==='visas') { ico.textContent='🛂'; title.textContent='اطلب تأشيرتك الآن'; sub.textContent='تأشيرات لجميع الوجهات بأسرع وقت'; }
 }
 
-// ===== AUTH UI =====
+// ============ AUTH UI ============
 function updateNavUI(user) {
   const navAuth = document.getElementById('navAuth');
   const reviewForm = document.getElementById('reviewFormArea');
@@ -1597,24 +1700,14 @@ function updateNavUI(user) {
   if (user) {
     const name = user.displayName || user.email.split('@')[0];
     const av = name.charAt(0).toUpperCase();
-    navAuth.innerHTML = `
-      <div class="nav-user-btn">
-        <div class="nav-avatar">${av}</div>
-        <span class="uname">${name}</span>
-      </div>
-      <button class="nav-login-btn" onclick="doLogout()">خروج</button>`;
-    reviewForm.style.display = 'block';
-    reviewPrompt.style.display = 'none';
+    navAuth.innerHTML = `<div class="nav-user-btn"><div class="nav-avatar">${av}</div><span class="uname">${name}</span></div><button class="nav-login-btn" onclick="doLogout()">خروج</button>`;
+    reviewForm.style.display='block'; reviewPrompt.style.display='none';
   } else {
     navAuth.innerHTML = `<button class="nav-login-btn" onclick="openAuthModal('login')">تسجيل الدخول</button>`;
-    reviewForm.style.display = 'none';
-    reviewPrompt.style.display = 'block';
+    reviewForm.style.display='none'; reviewPrompt.style.display='block';
   }
 }
-function openAuthModal(tab) {
-  document.getElementById('authModal').classList.add('open');
-  switchAuthTab(tab);
-}
+function openAuthModal(tab) { document.getElementById('authModal').classList.add('open'); switchAuthTab(tab); }
 function closeAuthModal() { document.getElementById('authModal').classList.remove('open'); }
 function switchAuthTab(tab) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -1624,254 +1717,145 @@ function switchAuthTab(tab) {
 }
 function showAuthMsg(form, msg, type) {
   const el = document.getElementById('msg-'+form);
-  el.textContent = msg; el.className = 'auth-msg '+type; el.style.display='block';
+  el.textContent = msg; el.className='auth-msg '+type; el.style.display='block';
 }
 function setBtnLoading(id, loading) {
-  const btn = document.getElementById(id);
-  if (!btn) return;
-  btn.disabled = loading;
-  btn.innerHTML = loading ? '<span class="spinner"></span>' : btn.dataset.label || btn.textContent;
-  if (!loading && !btn.dataset.label) btn.dataset.label = btn.textContent;
+  const btn = document.getElementById(id); if(!btn) return;
+  if (!loading && !btn.dataset.label) btn.dataset.label = btn.innerHTML;
+  btn.disabled = loading; btn.innerHTML = loading ? '<span class="spinner"></span>' : (btn.dataset.label||btn.innerHTML);
 }
 function firebaseErrAr(code) {
-  const map = {
-    'auth/email-already-in-use': '📧 هذا الإيميل مسجل بالفعل',
-    'auth/invalid-email': '📧 صيغة الإيميل غير صحيحة',
-    'auth/wrong-password': '🔒 كلمة السر غير صحيحة',
-    'auth/user-not-found': '📧 لا يوجد حساب بهذا الإيميل',
-    'auth/weak-password': '🔒 كلمة السر ضعيفة جداً',
-    'auth/too-many-requests': '⚠️ محاولات كثيرة، انتظر قليلاً',
-    'auth/invalid-credential': '❌ بيانات الدخول غير صحيحة',
-  };
-  return map[code] || '❌ حدث خطأ: ' + code;
+  const map = {'auth/email-already-in-use':'📧 هذا الإيميل مسجل بالفعل','auth/invalid-email':'📧 صيغة الإيميل غير صحيحة','auth/wrong-password':'🔒 كلمة السر غير صحيحة','auth/user-not-found':'📧 لا يوجد حساب بهذا الإيميل','auth/weak-password':'🔒 كلمة السر ضعيفة','auth/too-many-requests':'⚠️ محاولات كثيرة، انتظر','auth/invalid-credential':'❌ بيانات الدخول غير صحيحة'};
+  return map[code]||'❌ حدث خطأ: '+code;
 }
 
-// ===== STAR RATING =====
+// ============ STAR RATING ============
 function setStarRating(val) {
   document.getElementById('rev-rating-val').dataset.val = val;
-  const stars = document.querySelectorAll('#starRating span');
-  stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.val) <= val));
+  document.querySelectorAll('#starRating span').forEach(s => s.classList.toggle('active', parseInt(s.dataset.val)<=val));
 }
 
-// ===== RENDER REVIEWS =====
+// ============ RENDER REVIEWS ============
 function renderReviews(reviews) {
   if (!reviews.length) return;
   const grid = document.getElementById('reviewsGrid');
-  // Keep first 3 default ones as fallback structure, then replace
   grid.innerHTML = '';
   reviews.forEach(r => {
-    const starsHtml = '★'.repeat(r.rating) + '☆'.repeat(5-r.rating);
+    const starsHtml = '★'.repeat(r.rating)+'☆'.repeat(5-r.rating);
     const av = (r.name||'م').charAt(0).toUpperCase();
     const dateStr = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('ar-EG') : '';
-    grid.innerHTML += `
-      <div class="test-card reveal vis">
-        <div class="stars">${starsHtml}</div>
-        <p class="test-txt">${r.text}</p>
-        <div class="test-author">
-          <div class="author-av">${av}</div>
-          <div><div class="author-nm">${r.name}</div><div class="author-lc">${dateStr}</div></div>
-        </div>
-      </div>`;
+    grid.innerHTML += `<div class="test-card reveal vis"><div class="stars">${starsHtml}</div><p class="test-txt">${r.text}</p><div class="test-author"><div class="author-av">${av}</div><div><div class="author-nm">${r.name}</div><div class="author-lc">${r.location||dateStr}</div></div></div></div>`;
   });
 }
-
-// ===== ADMIN REVIEWS =====
 function renderAdminReviews(pending, approved) {
   const pList = document.getElementById('pendingReviewsList');
   const aList = document.getElementById('approvedReviewsList');
   if (!pList) return;
-  if (!pending.length) {
-    pList.innerHTML = '<p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">لا توجد تعليقات معلقة ✅</p>';
-  } else {
-    pList.innerHTML = pending.map(r => `
-      <div class="pending-card">
-        <div class="p-name">⭐${'★'.repeat(r.rating)} — ${r.name}</div>
-        <div class="p-text">${r.text}</div>
-        <div class="p-actions">
-          <button class="p-approve" onclick="approveReview('${r.id}')">✅ نشر</button>
-          <button class="p-reject" onclick="deleteReview('${r.id}')">🗑️ حذف</button>
-        </div>
-      </div>`).join('');
-  }
-  if (!approved.length) {
-    aList.innerHTML = '<p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">لا توجد تعليقات منشورة</p>';
-  } else {
-    aList.innerHTML = approved.map(r => `
-      <div class="pending-card">
-        <div class="p-name">⭐${'★'.repeat(r.rating)} — ${r.name}</div>
-        <div class="p-text">${r.text}</div>
-        <div class="p-actions">
-          <button class="p-reject" onclick="deleteReview('${r.id}')" style="width:100%">🗑️ حذف</button>
-        </div>
-      </div>`).join('');
-  }
+  pList.innerHTML = !pending.length ? '<p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">لا توجد تعليقات معلقة ✅</p>' : pending.map(r => `<div class="pending-card"><div class="p-name">⭐${'★'.repeat(r.rating)} — ${r.name}</div><div class="p-text">${r.text}</div><div class="p-actions"><button class="p-approve" onclick="approveReview('${r.id}')">✅ نشر</button><button class="p-reject" onclick="deleteReview('${r.id}')">🗑️ حذف</button></div></div>`).join('');
+  aList.innerHTML = !approved.length ? '<p style="color:#7a8fa6;font-size:12px;text-align:center;padding:10px;">لا توجد تعليقات منشورة</p>' : approved.map(r => `<div class="pending-card"><div class="p-name">⭐${'★'.repeat(r.rating)} — ${r.name}</div><div class="p-text">${r.text}</div><div class="p-actions"><button class="p-reject" onclick="deleteReview('${r.id}')" style="width:100%">🗑️ حذف</button></div></div>`).join('');
 }
 
-// ===== APPLY SETTINGS TO PAGE =====
+// ============ APPLY SETTINGS ============
 function applySettings(s) {
-  if (s.brandAr) { document.querySelectorAll('.nav-logo-text .ar, .foot-logo span').forEach(el => el.textContent = s.brandAr); }
-  if (s.brandEn) { document.querySelectorAll('.nav-logo-text .en').forEach(el => el.textContent = s.brandEn); }
-  if (s.heroLine1 || s.heroLine2) document.getElementById('heroTitle').innerHTML = `سافر بـ<span class="gold">${s.heroLine1||'أفضل سعر'}</span><br>${s.heroLine2||''}`;
-  if (s.heroSub) document.getElementById('heroSub').innerHTML = s.heroSub;
-  if (s.stat1) document.getElementById('stat1val').textContent = s.stat1;
-  if (s.stat1lbl) document.getElementById('stat1lbl').textContent = s.stat1lbl;
-  if (s.stat2) document.getElementById('stat2val').textContent = s.stat2;
-  if (s.stat2lbl) document.getElementById('stat2lbl').textContent = s.stat2lbl;
-  if (s.stat3) document.getElementById('stat3val').textContent = s.stat3;
-  if (s.stat3lbl) document.getElementById('stat3lbl').textContent = s.stat3lbl;
-  if (s.waNumber) { WA = s.waNumber; document.getElementById('waFloat').href = 'https://wa.me/'+s.waNumber; window.WA_OVERRIDE = s.waNumber; }
-  if (s.footerCopy) document.getElementById('footerCopy').textContent = s.footerCopy;
+  if (s.brandAr) document.querySelectorAll('.nav-logo-text .ar,.foot-logo span').forEach(el => el.textContent=s.brandAr);
+  if (s.brandEn) document.querySelectorAll('.nav-logo-text .en').forEach(el => el.textContent=s.brandEn);
+  if (s.heroLine1||s.heroLine2) document.getElementById('heroTitle').innerHTML=`سافر بـ<span class="gold">${s.heroLine1||'أفضل سعر'}</span><br>${s.heroLine2||''}`;
+  if (s.heroSub) document.getElementById('heroSub').innerHTML=s.heroSub;
+  if (s.stat1) document.getElementById('stat1val').textContent=s.stat1;
+  if (s.stat1lbl) document.getElementById('stat1lbl').textContent=s.stat1lbl;
+  if (s.stat2) document.getElementById('stat2val').textContent=s.stat2;
+  if (s.stat2lbl) document.getElementById('stat2lbl').textContent=s.stat2lbl;
+  if (s.stat3) document.getElementById('stat3val').textContent=s.stat3;
+  if (s.stat3lbl) document.getElementById('stat3lbl').textContent=s.stat3lbl;
+  if (s.waNumber) { WA=s.waNumber; document.getElementById('waFloat').href='https://wa.me/'+s.waNumber; window.WA_OVERRIDE=s.waNumber; }
+  if (s.footerCopy) document.getElementById('footerCopy').textContent=s.footerCopy;
 }
 
-// ===== ADMIN PANEL =====
+// ============ ADMIN PANEL ============
 function toggleAdminPanel() {
-  const panel = document.getElementById('adminPanel');
-  const overlay = document.getElementById('adminOverlay');
+  const panel = document.getElementById('adminPanel'); const overlay = document.getElementById('adminOverlay');
   if (panel.classList.contains('open')) { closeAdminPanel(); }
-  else { panel.classList.add('open'); overlay.classList.add('open'); window.loadReviews();
-    // Hide users tab for assistants
+  else {
+    panel.classList.add('open'); overlay.classList.add('open'); window.loadReviews();
     const usersTabBtn = document.querySelector('.adm-tab[onclick*="atab-users"]');
-    if (usersTabBtn) usersTabBtn.style.display = window._isAdmin ? '' : 'none'; }
+    if (usersTabBtn) usersTabBtn.style.display = window._isAdmin?'':'none';
+  }
 }
-function closeAdminPanel() {
-  document.getElementById('adminPanel').classList.remove('open');
-  document.getElementById('adminOverlay').classList.remove('open');
-}
+function closeAdminPanel() { document.getElementById('adminPanel').classList.remove('open'); document.getElementById('adminOverlay').classList.remove('open'); }
 function switchAdmTab(btn, tabId) {
   document.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.adm-tab-content').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active'); document.getElementById(tabId).classList.add('active');
 }
-
-// ===== TOAST =====
 function showToast(msg) {
   const t = document.getElementById('adminToast');
-  t.textContent = msg; t.classList.add('show');
+  t.textContent=msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ===== MULTI-LEG MANAGEMENT =====
+// ============ MULTI-LEG ============
 let legCount = 0;
-
-function renderLegAirportList(listEl, query) {
-  const q = query.trim().toLowerCase();
-  if (!q) { listEl.innerHTML = ''; listEl.classList.remove('show'); return; }
-  const matched = AIRPORTS.filter(a => a[0].toLowerCase().includes(q) || a[1].toLowerCase().includes(q) || a[2].toLowerCase().includes(q) || a[3].toLowerCase().includes(q));
-  if (!matched.length) { listEl.innerHTML = '<div class="ap-empty">لا توجد نتائج</div>'; listEl.classList.add('show'); return; }
-  const byCountry = {};
-  matched.forEach(a => { if (!byCountry[a[3]]) byCountry[a[3]]=[]; byCountry[a[3]].push(a); });
-  let html = '';
-  Object.keys(byCountry).forEach(country => {
-    html += `<div class="ap-country">${country}</div>`;
-    byCountry[country].forEach(a => {
-      html += `<div class="ap-item" data-code="${a[0]}" data-city="${a[1]}"><div class="ap-info"><span class="ap-city">${a[1]}</span><span class="ap-name">${a[2]}</span></div><span class="ap-code">${a[0]}</span></div>`;
-    });
-  });
-  listEl.innerHTML = html;
-  listEl.classList.add('show');
-}
-
 function setupLegInput(inputEl, listEl, wrapEl) {
-  inputEl.addEventListener('input', () => {
-    renderLegAirportList(listEl, inputEl.value);
-    wrapEl.classList.toggle('has-val', inputEl.value.length > 0);
-  });
-  listEl.addEventListener('mousedown', (e) => {
-    const item = e.target.closest('.ap-item');
-    if (!item) return;
+  function renderList(q) {
+    const query = q.trim().toLowerCase();
+    if (!query) { listEl.innerHTML=''; listEl.classList.remove('show'); return; }
+    const matched = AIRPORTS.filter(a => a[0].toLowerCase().includes(query)||a[1].toLowerCase().includes(query)||a[2].toLowerCase().includes(query)||a[3].toLowerCase().includes(query));
+    if (!matched.length) { listEl.innerHTML='<div class="ap-empty">لا توجد نتائج</div>'; listEl.classList.add('show'); return; }
+    const byCountry={};
+    matched.forEach(a=>{if(!byCountry[a[3]])byCountry[a[3]]=[];byCountry[a[3]].push(a);});
+    let html='';
+    Object.keys(byCountry).forEach(country=>{
+      html+=`<div class="ap-country">${country}</div>`;
+      byCountry[country].forEach(a=>{html+=`<div class="ap-item" data-code="${a[0]}" data-city="${a[1]}"><div class="ap-info"><span class="ap-city">${a[1]}</span><span class="ap-name">${a[2]}</span></div><span class="ap-code">${a[0]}</span></div>`;});
+    });
+    listEl.innerHTML=html; listEl.classList.add('show');
+  }
+  inputEl.addEventListener('input', () => { renderList(inputEl.value); wrapEl.classList.toggle('has-val', inputEl.value.length>0); });
+  listEl.addEventListener('mousedown', e => {
+    const item = e.target.closest('.ap-item'); if (!item) return;
     e.preventDefault();
     inputEl.value = `${item.dataset.city} (${item.dataset.code})`;
-    listEl.classList.remove('show');
-    wrapEl.classList.add('has-val');
+    listEl.classList.remove('show'); wrapEl.classList.add('has-val');
   });
-  inputEl.addEventListener('blur', () => { setTimeout(() => listEl.classList.remove('show'), 120); });
-  document.addEventListener('click', (e) => { if (!wrapEl.contains(e.target)) listEl.classList.remove('show'); });
+  inputEl.addEventListener('blur', () => setTimeout(()=>listEl.classList.remove('show'),120));
+  document.addEventListener('click', e => { if(!wrapEl.contains(e.target)) listEl.classList.remove('show'); });
 }
-
 function createLeg() {
   legCount++;
   const n = legCount;
   const div = document.createElement('div');
-  div.className = 'leg-card';
-  div.id = 'leg-card-' + n;
-  div.innerHTML = `
-    <div class="leg-header">
-      <span class="leg-lbl">✈ الرحلة ${n}</span>
-      ${n > 2 ? `<button type="button" class="leg-remove" onclick="removeLeg(${n})">✕ حذف</button>` : ''}
-    </div>
+  div.className='leg-card'; div.id='leg-card-'+n;
+  div.innerHTML = `<div class="leg-header"><span class="leg-lbl">✈ الرحلة ${n}</span>${n>2?`<button type="button" class="leg-remove" onclick="removeLeg(${n})">✕ حذف</button>`:''}</div>
     <div class="frow c2" style="margin-bottom:8px;">
-      <div class="fg"><label>✈ مطار المغادرة</label>
-        <div class="airport-wrap" id="lfrom-wrap-${n}">
-          <input type="text" id="lfrom-${n}" placeholder="ابحث بالمدينة أو الكود..." autocomplete="off">
-          <button type="button" class="airport-clear" id="lfrom-clear-${n}" tabindex="-1">×</button>
-          <div class="airport-list" id="lfrom-list-${n}"></div>
-        </div>
-      </div>
-      <div class="fg"><label>🛬 مطار الوصول</label>
-        <div class="airport-wrap" id="lto-wrap-${n}">
-          <input type="text" id="lto-${n}" placeholder="ابحث بالمدينة أو الكود..." autocomplete="off">
-          <button type="button" class="airport-clear" id="lto-clear-${n}" tabindex="-1">×</button>
-          <div class="airport-list" id="lto-list-${n}"></div>
-        </div>
-      </div>
+      <div class="fg"><label>✈ مطار المغادرة</label><div class="airport-wrap" id="lfrom-wrap-${n}"><input type="text" id="lfrom-${n}" placeholder="ابحث..." autocomplete="off"><button type="button" class="airport-clear" id="lfrom-clear-${n}" tabindex="-1">×</button><div class="airport-list" id="lfrom-list-${n}"></div></div></div>
+      <div class="fg"><label>🛬 مطار الوصول</label><div class="airport-wrap" id="lto-wrap-${n}"><input type="text" id="lto-${n}" placeholder="ابحث..." autocomplete="off"><button type="button" class="airport-clear" id="lto-clear-${n}" tabindex="-1">×</button><div class="airport-list" id="lto-list-${n}"></div></div></div>
     </div>
-    <div class="fg"><label>📅 تاريخ هذه الرحلة</label>
-      <input type="date" id="ldate-${n}">
-    </div>`;
+    <div class="fg"><label>📅 تاريخ هذه الرحلة</label><input type="date" id="ldate-${n}"></div>`;
   document.getElementById('legsList').appendChild(div);
-
-  const fromInput = document.getElementById('lfrom-' + n);
-  const fromList  = document.getElementById('lfrom-list-' + n);
-  const fromWrap  = document.getElementById('lfrom-wrap-' + n);
-  const fromClear = document.getElementById('lfrom-clear-' + n);
-  setupLegInput(fromInput, fromList, fromWrap);
-  fromClear.onclick = () => { fromInput.value = ''; fromWrap.classList.remove('has-val'); };
-
-  const toInput = document.getElementById('lto-' + n);
-  const toList  = document.getElementById('lto-list-' + n);
-  const toWrap  = document.getElementById('lto-wrap-' + n);
-  const toClear = document.getElementById('lto-clear-' + n);
-  setupLegInput(toInput, toList, toWrap);
-  toClear.onclick = () => { toInput.value = ''; toWrap.classList.remove('has-val'); };
+  const fi=document.getElementById('lfrom-'+n),fl=document.getElementById('lfrom-list-'+n),fw=document.getElementById('lfrom-wrap-'+n);
+  setupLegInput(fi,fl,fw); document.getElementById('lfrom-clear-'+n).onclick=()=>{fi.value='';fw.classList.remove('has-val');};
+  const ti=document.getElementById('lto-'+n),tl=document.getElementById('lto-list-'+n),tw=document.getElementById('lto-wrap-'+n);
+  setupLegInput(ti,tl,tw); document.getElementById('lto-clear-'+n).onclick=()=>{ti.value='';tw.classList.remove('has-val');};
 }
-
-function removeLeg(n) {
-  const card = document.getElementById('leg-card-' + n);
-  if (card) card.remove();
-}
-
+function removeLeg(n) { document.getElementById('leg-card-'+n)?.remove(); }
 function addLeg() { createLeg(); }
-
 function getLegsData() {
-  const cards = document.querySelectorAll('#legsList .leg-card');
-  return Array.from(cards).map((card, i) => {
+  return Array.from(document.querySelectorAll('#legsList .leg-card')).map((card,i)=>{
     const inputs = card.querySelectorAll('input[type="text"]');
     const dateInput = card.querySelector('input[type="date"]');
-    return {
-      from: inputs[0] ? inputs[0].value.trim() : '',
-      to:   inputs[1] ? inputs[1].value.trim() : '',
-      date: dateInput ? dateInput.value : '',
-      num: i + 1
-    };
+    return { from: inputs[0]?.value.trim()||'', to: inputs[1]?.value.trim()||'', date: dateInput?.value||'', num:i+1 };
   });
 }
+function initLegs() { document.getElementById('legsList').innerHTML=''; legCount=0; createLeg(); createLeg(); }
 
-function initLegs() {
-  document.getElementById('legsList').innerHTML = '';
-  legCount = 0;
-  createLeg();
-  createLeg();
-}
+// ============ SCROLL REVEAL ============
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{ if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('vis'),i*75); obs.unobserve(e.target); } });
+},{threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
-// ===== SCROLL REVEAL =====
-const obs = new IntersectionObserver(entries => {
-  entries.forEach((e,i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('vis'), i*75); obs.unobserve(e.target); } });
-}, { threshold:0.08 });
-document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-
-// Init flight
-setTrip(document.querySelector('.tt-btn.sel'), 'ذهاب فقط');
+// Init
+setTrip(document.querySelector('.tt-btn.sel'),'ذهاب فقط');
 </script>
 </body>
 </html>
