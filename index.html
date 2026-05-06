@@ -1522,9 +1522,9 @@ function sendWA() {
     routeText = legs.map((l,i) => `   الرحلة ${i+1}: ${l.from} ← ${l.to} | 📅 ${l.date}`).join('\\n');
   }
   
-  const msg = `✈️ *طلب حجز تذكرة — سلطان ترافيل*\\n━━━━━━━━━━━━━━━━\\n🗺️ *تفاصيل الرحلة:*\\n   النوع: ${tripType}\\n   الخدمة: ${document.getElementById('flightType').value}\\n   ${tripType !== 'متعدد الوجهات' ? `من: ${document.getElementById('from').value}\\n   إلى: ${document.getElementById('to').value}\\n   تاريخ المغادرة: ${document.getElementById('depDate').value}` : `الرحلات:\\n${routeText}`}\\n   الدرجة: ${document.getElementById('cabin').value}\\n   المسافرون: ${pax.adults} بالغ${pax.children>0?' / '+pax.children+' طفل':''}${pax.infants>0?' / '+pax.infants+' رضيع':''}\\n━━━━━━━━━━━━━━━━\\n📝 *مدخل البيانات:* ${document.getElementById('dataEntryName').value}\\n📞 *التواصل:*\\n   الاسم: ${document.getElementById('cName').value}\\n   الهاتف: ${document.getElementById('cPhone').value}\\n⏰ ${new Date().toLocaleString('ar-EG')}`;
+  const msg = `✈️ *طلب حجز تذكرة — سلطان ترافيل* *تفاصيل الرحلة:*   النوع: ${tripType}   الخدمة: ${document.getElementById('flightType').value}   ${tripType !== 'متعدد الوجهات' ? `من: ${document.getElementById('from').value}   إلى: ${document.getElementById('to').value}   تاريخ المغادرة: ${document.getElementById('depDate').value}` : `الرحلات:\\n${routeText}`}   الدرجة: ${document.getElementById('cabin').value}   المسافرون: ${pax.adults} بالغ${pax.children>0?' / '+pax.children+' طفل':''}${pax.infants>0?' / '+pax.infants+' رضيع':''} *مدخل البيانات:* ${document.getElementById('dataEntryName').value}📞 *التواصل:*\\n   الاسم: ${document.getElementById('cName').value}   الهاتف: ${document.getElementById('cPhone').value}⏰ ${new Date().toLocaleString('ar-EG')}`;
   
-  window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open(`https://wa.me/01036370091${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
   for (let i=1;i<=3;i++) document.getElementById('panel'+i).classList.remove('active');
   document.getElementById('stepsBar').style.display='none';
   document.getElementById('successPanel').style.display='block';
